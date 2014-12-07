@@ -13,8 +13,17 @@
     (main/info "Generating a new phoenix-webapp project.")
 
     (->files data
-             ;; TODO
-             )
+             (->files data
+                      ["project.clj" (render "project.clj" data)]
+                      [".gitignore" (render "gitignore" data)]
+                      ["resources/{{name}}-config.edn" (render "resources/config.edn" data)]
+             
+                      ["src/{{sanitized}}/service/handler.clj" (render "clj/handler.clj" data)]
+                      ["src/{{sanitized}}/service/css.clj" (render "clj/css.clj" data)]
+                      ["ui-src/{{sanitized}}/ui/app.cljs" (render "cljs/app.cljs" data)]
+                      ["externs/jquery.js" (render "externs/jquery.js")]
+                      
+                      "common-src"))
 
     (main/info "All done!")
     (main/info (str "Change into the project directory, "
