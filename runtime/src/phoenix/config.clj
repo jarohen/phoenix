@@ -12,7 +12,7 @@
   ;; TODO multiple config files
   (-> (slurp config-resource)
       read-string-in-ns
-      (dissoc ::nrepl-port)
+      (dissoc :phoenix/nrepl-port)
       (->> (m/map-keys (fn [k]
                          {:named k})))))
 

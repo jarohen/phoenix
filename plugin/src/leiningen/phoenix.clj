@@ -10,7 +10,9 @@
   [project]
 
   (eval-in-project (with-runtime-dep project)
-                   `(phoenix/init-phoenix! project)
+                   `(phoenix/init-phoenix! (quote ~(select-keys project [:phoenix/config
+                                                                         :target-path
+                                                                         :repl-options])))
                    `(require '~'phoenix)))
 
 (defn phoenix
