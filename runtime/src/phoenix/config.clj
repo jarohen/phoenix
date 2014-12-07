@@ -4,10 +4,14 @@
             [com.stuartsierra.dependency :as deps]
             [com.stuartsierra.component :as c]))
 
+(defn read-string-in-ns [s]
+  (binding [*ns* (find-ns 'phoenix.config)]
+    (read-string s)))
+
 (defn load-config [config-resource]
   ;; TODO multiple config files
   (-> (slurp config-resource)
-      read-string
+      read-string-in-ns
       (dissoc ::nrepl-port)
       (->> (m/map-keys (fn [k]
                          {:named k})))))
