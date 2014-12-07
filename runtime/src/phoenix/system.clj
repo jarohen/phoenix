@@ -1,25 +1,32 @@
 (ns phoenix.system
-  (:require [phoenix.config :as config :refer [read-config]]
-            [medley.core :as m]
+  (:require [medley.core :as m]
             [com.stuartsierra.component :as c]))
 
-(defn make-component [{:keys [static-config component]}]
-  ;; TODO
-  )
+(defn make-component [[id {:keys [static-config component]}]]
+  (do
+    (require (symbol (namespace component)))
+
+    (try
+      [id (eval `(~component ~static-config))]
+      (catch Exception e
+        (throw (ex-info "Failed initialising component"
+                        {:component id
+                         :generator-fn component
+                         :config static-config}
+                        e))))))
 
 (defn system-deps [system-config]
-  ;; TODO
-  )
+  (->> system-config
+       (m/map-vals :component-deps)
+       (m/remove-vals empty?)))
 
-(defn phoenix-system [config-resource]
-  (let [system-config (read-config config-resource)]
-    
-    (-> (apply c/system-map (->> system-config
-                                 (m/filter-vals :component)
-                                 (m/map-vals make-component)
-                                 (apply concat)))
-        
-        (c/system-using (system-deps system-config)))))
+(defn phoenix-system [system-config]
+  (-> (apply c/system-map (->> system-config
+                               (map make-component)
+                               (into {})
+                               (apply concat)))
+      
+      (c/system-using (system-deps system-config))))
 
 (comment
   '{:db {:phoenix/generator my-app.db/db-component

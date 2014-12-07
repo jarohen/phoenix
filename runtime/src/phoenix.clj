@@ -1,7 +1,8 @@
 (ns ^{:clojure.tools.namespace.repl/load false
       :clojure.tools.namespace.repl/unload false}
   phoenix
-  (:require [phoenix.nrepl :refer [start-nrepl!]]
+  (:require [phoenix.config :refer [read-config]]
+            [phoenix.nrepl :refer [start-nrepl!]]
             [phoenix.system :refer [phoenix-system]]
             [clojure.java.io :as io]
             [clojure.tools.namespace.repl :as tn]
@@ -12,7 +13,7 @@
 (def system)
 
 (defn start! []
-  (let [started-system (c/start-system (phoenix-system config-resource))]
+  (let [started-system (c/start-system (phoenix-system (read-config config-resource)))]
     (alter-var-root #'system (constantly started-system))
     started-system))
 
