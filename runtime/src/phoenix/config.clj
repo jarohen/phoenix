@@ -72,11 +72,10 @@
 (defn read-config [config-resource]
   (let [config (-> (load-config config-resource)
                    (resolve-location)
-                   (normalise-deps))
-        sorted-deps (calculate-deps config)]
-    (with-static-config config sorted-deps)))
-
-
+                   (normalise-deps))]
+    
+    (->> (with-static-config config (calculate-deps config))
+         (m/filter-vals :component))))
 
 (comment
   (let [config (-> {:c {::component 'my.ns/function
