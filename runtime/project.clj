@@ -3,6 +3,8 @@
 (defproject jarohen/phoenix.runtime version
   :description "The runtime for the Phoenix plugin"
 
+  :url "https://github.com/james-henderson/phoenix"
+
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   
