@@ -1,7 +1,7 @@
 (ns ^{:clojure.tools.namespace.repl/load false
       :clojure.tools.namespace.repl/unload false}
   phoenix
-  (:require [phoenix.config :refer [read-config]]
+  (:require [phoenix.config :as config]
             [phoenix.nrepl :refer [start-nrepl!]]
             [phoenix.system :refer [phoenix-system]]
             [clojure.java.io :as io]
@@ -13,12 +13,12 @@
 (def !system
   (atom nil))
 
-(defn _do-start! []
-  (reset! !system (c/start-system (phoenix-system (read-config config-resource)))))
+(defn- do-start! []
+  (reset! !system (c/start-system (phoenix-system (config/read-config config-resource)))))
 
 (defn start! []
   (assert (nil? @!system) "System already started!")
-  (tn/refresh :after 'phoenix/_do-start!))
+  (tn/refresh :after 'phoenix/do-start!))
 
 (defn stop! []
   (c/stop-system @!system)
