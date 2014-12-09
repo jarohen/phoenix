@@ -1,27 +1,24 @@
 (ns phoenix-sample.service.handler
   (:require [phoenix-sample.service.server :as s]
             [phoenix-sample.service.db :as db]
-            [ring.util.response :refer [response content-type]]
+            [ring.util.response :refer [response status content-type]]
             [ring.middleware.format :refer [wrap-restful-format]]
             [bidi.ring :refer [make-handler]]
             [com.stuartsierra.component :refer [Lifecycle]]))
 
 (def routes
-  [["/object/" :oid] :object-lookup #_{:get :object-lookup
-                                  :put :object-set}])
-
-(bidi.bidi/match-route routes "/object/231")
-
+  [["/object/" :oid] {:get :object-lookup
+                      :put :object-set}])
 
 (defn handlers [db]
-  {:lookup (fn [req]
-             (get @db (get-in req [:route-params :oid])))
+  {:object-lookup (fn [req]
+                    (response (db/get-obj db (get-in req [:route-params :oid]))))
 
    :object-set (fn [req]
-                 (swap! db
-                        assoc
-                        (get-in req [:route-params :oid])
-                        (:body-params req)))})
+                 (future
+                   (db/put-obj! db (get-in req [:route-params :oid]) (:body-params req)))
+                 (-> (response "OK!")
+                     (status 202)))})
 
 (defrecord AppHandler [opts]
   Lifecycle
