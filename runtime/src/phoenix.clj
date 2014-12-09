@@ -13,9 +13,12 @@
 (def !system
   (atom nil))
 
+(defn _do-start! []
+  (reset! !system (c/start-system (phoenix-system (read-config config-resource)))))
+
 (defn start! []
   (assert (nil? @!system) "System already started!")
-  (reset! !system (c/start-system (phoenix-system (read-config config-resource)))))
+  (tn/refresh :after 'phoenix/_do-start!))
 
 (defn stop! []
   (c/stop-system @!system)
@@ -23,7 +26,7 @@
 
 (defn reload! []
   (stop!)
-  (tn/refresh :after 'phoenix/start!))
+  (start!))
 
 (defn init-phoenix! [{phoenix-config :phoenix/config, :as project}]
   (assert (and phoenix-config
