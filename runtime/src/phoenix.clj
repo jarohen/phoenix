@@ -10,16 +10,16 @@
 
 (def ^:private config-resource)
 
-(def system)
+(def !system
+  (atom nil))
 
 (defn start! []
-  (let [started-system (c/start-system (phoenix-system (read-config config-resource)))]
-    (alter-var-root #'system (constantly started-system))
-    started-system))
+  (assert (nil? @!system) "System already started!")
+  (reset! !system (c/start-system (phoenix-system (read-config config-resource)))))
 
 (defn stop! []
-  (c/stop-system system)
-  (alter-var-root #'system (constantly nil)))
+  (c/stop-system @!system)
+  (reset! !system nil))
 
 (defn reload! []
   (stop!)
