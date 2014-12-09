@@ -1,6 +1,7 @@
 (ns phoenix.config
   (:require [clojure.walk :refer [postwalk]]
             [medley.core :as m]
+            [clojure.set :as set]
             [com.stuartsierra.dependency :as deps]
             [com.stuartsierra.component :as c]))
 
@@ -21,17 +22,24 @@
   config)
 
 (defn calculate-deps [config]
-  (deps/topo-sort (reduce (fn [graph [id {:keys [component component-config]}]]
-                            (reduce (fn [graph [dep-key dep-value]]
-                                      (if (and (vector? dep-value)
-                                               (= (first dep-value) ::dep))
-                                        (deps/depend graph id (second dep-value))
-                                        graph))
-                                    graph
-                                    component-config))
+  (let [components (set (keys config))
+        sorted-deps (deps/topo-sort (reduce (fn [graph [id {:keys [component component-config]}]]
+                                              (reduce (fn [graph [dep-key dep-value]]
+                                                        (if (and (vector? dep-value)
+                                                                 (= (first dep-value) ::dep))
+                                                          (deps/depend graph id (second dep-value))
+                                                          graph))
+                                                      graph
+                                                      component-config))
           
-                          (deps/graph)
-                          config)))
+                                            (deps/graph)
+                                            config))
+        
+        ;; these components don't depend on anything or have anything
+        ;; depend on them, but they still need to be in the list
+        island-components (set/difference components (set sorted-deps))]
+    
+    (concat sorted-deps island-components)))
 
 (defn normalise-deps [config]
   (->> (for [[k v] config]
