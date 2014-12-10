@@ -13,9 +13,7 @@
   ;; TODO multiple config files
   (-> (slurp config-resource)
       read-string-in-ns
-      (dissoc :phoenix/nrepl-port)
-      (->> (m/map-keys (fn [k]
-                         {:named k})))))
+      (dissoc :phoenix/nrepl-port)))
 
 (defn resolve-location [config]
   ;; TODO combine environments etc
@@ -48,7 +46,7 @@
                                  v
                                  (->> (for [[config-key config-value] (dissoc v ::component)]
                                         [config-key (if (= config-value ::dep)
-                                                      [::dep {:named config-key}]
+                                                      [::dep config-key]
                                                       config-value)])
                                       (into {})))}])
        
@@ -64,10 +62,11 @@
                           (reduce (fn [component-acc [config-key config-value]]
                                     (if (and (vector? config-value)
                                              (= (first config-value) ::dep))
-                                      (let [{:keys [component static-config]} (get acc (second config-value))]
+                                      (let [dependent-key (second config-value)
+                                            {:keys [component static-config]} (get acc dependent-key)]
                                         (if (nil? component)
                                           (assoc-in component-acc [:static-config config-key] static-config)
-                                          (update-in component-acc [:component-deps] assoc config-key (second config-value))))
+                                          (update-in component-acc [:component-deps] assoc config-key dependent-key)))
                                       
                                       (assoc-in component-acc [:static-config config-key] config-value)))
                                   
@@ -92,13 +91,11 @@
                         :host "some-host"}
 
                     :c1 {::component 'my.ns/function-1
-                         :a [::dep {:named :map-a}]}
+                         :a [::dep :map-a]}
               
                     :map-a {:a 1
                             :b 2}}
 
-                   (->> (m/map-keys (fn [k]
-                                      {:named k})))
                    normalise-deps)
         sorted-deps (calculate-deps config)]
     (with-static-config config sorted-deps)))

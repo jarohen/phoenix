@@ -8,7 +8,7 @@
                :db ::dep}
 
  :server {::component phoenix-sample.service.server/make-server
-          :handler [::dep {:named :web-handler}]
+          :handler [::dep :web-handler]
           :port 3000}}
 
 
