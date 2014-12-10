@@ -9,6 +9,10 @@
 
  :server {::component phoenix-sample.service.server/make-server
           :handler [::dep :web-handler]
-          :port 3000}}
+          :port 3000}
+
+ :phoenix/environments {"stg" {:server {:port 8080}}}
+ 
+ :phoenix/hosts {"graphite" {:server {:port 3001}}}}
 
 

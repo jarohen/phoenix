@@ -1,5 +1,6 @@
 (ns phoenix.config
-  (:require [clojure.walk :refer [postwalk]]
+  (:require [phoenix.location :as l]
+            [clojure.walk :refer [postwalk]]
             [medley.core :as m]
             [clojure.set :as set]
             [com.stuartsierra.dependency :as deps]
@@ -14,10 +15,6 @@
   (-> (slurp config-resource)
       read-string-in-ns
       (dissoc :phoenix/nrepl-port)))
-
-(defn resolve-location [config]
-  ;; TODO combine environments etc
-  config)
 
 (defn calculate-deps [config]
   (let [components (set (keys config))
@@ -76,12 +73,11 @@
           {}
           sorted-deps))
 
-(defn read-config [config-resource]
-  (let [config (-> (load-config config-resource)
-                   (resolve-location)
-                   (normalise-deps))]
-    
-    (->> (with-static-config config (calculate-deps config))
+(defn read-config [config-resource {:keys [location]}]
+  (let [normalised-config (-> (load-config config-resource)
+                              (l/combine-config location)
+                              (normalise-deps))]
+    (->> (with-static-config normalised-config (calculate-deps normalised-config))
          (m/filter-vals :component))))
 
 (comment
