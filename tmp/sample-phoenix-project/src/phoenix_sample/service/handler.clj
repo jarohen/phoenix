@@ -25,8 +25,8 @@
   (start [{:keys [db] :as this}]
     (println "starting handler with db:" (pr-str db))
 
-    (db/put-obj! db :foo :bar)
-    (println "Foo is:" (db/get-obj db :foo))
+    (db/put-obj! db "foo" :bar)
+    (println "Foo is:" (db/get-obj db "foo"))
     
     this)
   (stop [this] this)
