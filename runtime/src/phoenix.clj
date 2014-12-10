@@ -10,7 +10,7 @@
 
 (def ^:private config-resource)
 
-(def !system
+(defonce !system
   (atom nil))
 
 (defn- do-start! []
