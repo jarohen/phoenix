@@ -26,7 +26,7 @@
                           {:location location})
       phoenix-system))
 
-(defn set-location! [{:keys [environment host] :as new-location}]
+(defn set-location! [{:keys [environment host user] :as new-location}]
   (assert (false? @!started?) "Can't change location when system is running...")
 
   (let [new-location (swap! !location
@@ -54,7 +54,7 @@
   (alter-var-root #'system c/stop-system)
   (reset! !started? false))
 
-(defn reload! [& [{:keys [environment host] :as new-location}]]
+(defn reload! [& [{:keys [environment host user] :as new-location}]]
   (stop!)
   (when new-location
     (set-location! new-location))

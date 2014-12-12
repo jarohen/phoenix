@@ -1,5 +1,6 @@
 (ns phoenix.location
   (:require [phoenix.merge :refer [deep-merge]]
+            [medley.core :as m]
             [clojure.java.shell :refer [sh]]
             [clojure.string :as s]))
 
@@ -8,16 +9,23 @@
 
    ;; not sure how I plan to make this work on Windoze... Will see if
    ;; someone complains first, I suspect.
-   :host (s/trim (:out (sh "hostname")))})
+   :host (s/trim (:out (sh "hostname")))
+   
+   :user (System/getProperty "user.name")})
 
 (defn extract-location-config [{environments :phoenix/environments, hosts :phoenix/hosts, :as config}]
   {:general (dissoc config :phoenix/environments :phoenix/hosts)
-   :hosts hosts
+   :hosts (m/map-vals #(dissoc % :phoenix/users) hosts)
+   :hosts-users (->> (for [[hostname {users :phoenix/users}] hosts
+                           [user host-user-config] users]
+                       [[hostname user] host-user-config])
+                     (into {}))
    :environments environments})
 
-(defn merge-configs [{:keys [general hosts environments]} {:keys [environment host]}]
+(defn merge-configs [{:keys [general hosts hosts-users environments]} {:keys [environment host user]}]
   (deep-merge general
               (get hosts host)
+              (get hosts-users [host user])
               (get environments environment)))
 
 (defn combine-config [config location]
