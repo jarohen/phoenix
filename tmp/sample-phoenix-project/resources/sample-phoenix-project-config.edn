@@ -1,10 +1,10 @@
 {:phoenix/nrepl-port 7888
 
- :db {::component phoenix-sample.service.db/make-database
+ :db {::component phoenix-sample.service.db/map->SimpleDatabase
       :host "mysql.jarohen.me.uk"
       :port 3306}
 
- :web-handler {::component phoenix-sample.service.handler/->AppHandler
+ :web-handler {::component phoenix-sample.service.handler/map->AppHandler
                :db ::dep}
 
  :server {::component phoenix.modules.http-kit/map->WebServer

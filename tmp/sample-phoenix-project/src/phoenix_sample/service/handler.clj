@@ -1,6 +1,7 @@
 (ns phoenix-sample.service.handler
   (:require [phoenix-sample.service.db :as db]
             [bidi.ring :refer [make-handler]]
+            [clojure.tools.logging :as log]
             [com.stuartsierra.component :refer [Lifecycle]]
             [medley.core :as m]
             [modular.ring :refer [WebRequestHandler]]
@@ -23,10 +24,10 @@
        
        (m/map-vals #(wrap-restful-format % :formats [:edn :json-kw]))))
 
-(defrecord AppHandler [opts]
+(defrecord AppHandler []
   Lifecycle
   (start [{:keys [db] :as this}]
-    (println "starting handler with db:" (pr-str db))
+    (log/info "starting handler with db" (pr-str db))
 
     (db/put-obj! db "foo" :bar)
     (println "Foo is:" (db/get-obj db "foo"))

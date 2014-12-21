@@ -20,7 +20,12 @@
                  [jarohen/phoenix.modules.http-kit "0.1.0-SNAPSHOT"]
 
                  [org.clojure/clojurescript "0.0-2371"]
-                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
+
+                 [org.clojure/tools.logging "0.3.1"]
+                 [org.slf4j/slf4j-api "1.7.9"]
+                 [org.apache.logging.log4j/log4j-slf4j-impl "2.1"]
+                 [org.apache.logging.log4j/log4j-core "2.1"]]
 
   :plugins [[jarohen/phoenix "0.1.0-SNAPSHOT"]]
 
