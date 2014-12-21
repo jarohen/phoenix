@@ -17,6 +17,8 @@
 
                  [jarohen/flow "0.3.0-alpha1"]
 
+                 [jarohen/phoenix.modules.http-kit "0.1.0-SNAPSHOT"]
+
                  [org.clojure/clojurescript "0.0-2371"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]]
 

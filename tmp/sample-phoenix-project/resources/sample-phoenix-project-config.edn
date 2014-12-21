@@ -7,7 +7,7 @@
  :web-handler {::component phoenix-sample.service.handler/->AppHandler
                :db ::dep}
 
- :server {::component phoenix-sample.service.server/make-server
+ :server {::component phoenix.modules.http-kit/map->WebServer
           :handler [::dep :web-handler]
           :port 3000}
 

@@ -1,12 +1,11 @@
 (ns phoenix-sample.service.handler
-  (:require [phoenix-sample.service.server :as s]
-            [phoenix-sample.service.db :as db]
-            [ring.util.response :refer [response status content-type]]
-            [ring.middleware.format :refer [wrap-restful-format]]
-            
+  (:require [phoenix-sample.service.db :as db]
             [bidi.ring :refer [make-handler]]
+            [com.stuartsierra.component :refer [Lifecycle]]
             [medley.core :as m]
-            [com.stuartsierra.component :refer [Lifecycle]]))
+            [modular.ring :refer [WebRequestHandler]]
+            [ring.middleware.format :refer [wrap-restful-format]]
+            [ring.util.response :refer [response status]]))
 
 (def routes
   [["/object/" :oid] {:get :object-lookup
@@ -35,6 +34,6 @@
     this)
   (stop [this] this)
 
-  s/WebHandler
-  (make-handler [{:keys [db] :as opts}]
+  WebRequestHandler
+  (request-handler [{:keys [db]}]
     (make-handler routes (handlers db))))
