@@ -3,7 +3,9 @@
             [phoenix-sample.service.db :as db]
             [ring.util.response :refer [response status content-type]]
             [ring.middleware.format :refer [wrap-restful-format]]
+            
             [bidi.ring :refer [make-handler]]
+            [medley.core :as m]
             [com.stuartsierra.component :refer [Lifecycle]]))
 
 (def routes
@@ -11,14 +13,16 @@
                       :put :object-set}])
 
 (defn handlers [db]
-  {:object-lookup (fn [req]
-                    (response (db/get-obj db (get-in req [:route-params :oid]))))
-
-   :object-set (fn [req]
-                 (future
-                   (db/put-obj! db (get-in req [:route-params :oid]) (:body-params req)))
-                 (-> (response "OK!")
-                     (status 202)))})
+  (->> {:object-lookup (fn [req]
+                         (response (db/get-obj db (get-in req [:route-params :oid]))))
+        
+        :object-set (fn [req]
+                      (future
+                        (db/put-obj! db (get-in req [:route-params :oid]) (:body-params req)))
+                      (-> (response "OK!")
+                          (status 202)))}
+       
+       (m/map-vals #(wrap-restful-format % :formats [:edn :json-kw]))))
 
 (defrecord AppHandler [opts]
   Lifecycle
@@ -33,5 +37,4 @@
 
   s/WebHandler
   (make-handler [{:keys [db] :as opts}]
-    (-> (make-handler routes (handlers db))
-        (wrap-restful-format :formats [:edn]))))
+    (make-handler routes (handlers db))))
