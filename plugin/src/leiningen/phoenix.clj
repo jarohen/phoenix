@@ -1,6 +1,6 @@
 (ns leiningen.phoenix
   (:require [leinjacker.eval :refer [eval-in-project]]
-            [phoenix.deps :refer [with-runtime-dep]]))
+            [phoenix.plugin :refer [select-project-keys]]))
 
 (defn server
   "Starts the Phoenix application, as per the configuration file specified in project.clj.
@@ -9,11 +9,12 @@
   
   [project]
 
-  (eval-in-project (with-runtime-dep project)
-                   `(phoenix/init-phoenix! (quote ~(select-keys project [:phoenix/config
-                                                                         :target-path
-                                                                         :repl-options])))
-                   `(require '~'phoenix)))
+  (let [project-subset (select-project-keys project)]
+    (eval-in-project project
+                     `(do
+                        (#'phoenix/init-nrepl! (quote ~project-subset))
+                        (phoenix/start!))
+                     `(require '~'phoenix))))
 
 (defn phoenix
   "Plugin to configure and co-ordinate a Component-based system

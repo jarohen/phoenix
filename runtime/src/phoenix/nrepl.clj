@@ -18,9 +18,8 @@
       (spit nrepl-port)
       (.deleteOnExit)))
 
-  (let [server (nrepl/start-server
-                      :port nrepl-port
-                      :handler (repl-handler repl-options))]
+  (let [server (nrepl/start-server :port nrepl-port
+                                   :handler (repl-handler repl-options))]
 
     (println "Started nREPL server, port" nrepl-port)
     server))

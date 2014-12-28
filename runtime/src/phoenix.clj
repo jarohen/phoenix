@@ -60,15 +60,19 @@
     (set-location! new-location))
   (start!))
 
-(defn init-phoenix! [{phoenix-config :phoenix/config, :as project}]
+(defn- assert-config [phoenix-config]
   (assert (and phoenix-config
                (io/resource phoenix-config))
-          "Please make sure you have a valid config resource specified at ':phoenix/config' in your 'project.clj'")
+          "Please make sure you have a valid config resource specified at ':phoenix/config' in your 'project.clj'"))
+
+(defn- init-phoenix! [{phoenix-config :phoenix/config, :as project}]
+  (assert-config phoenix-config)
   
   (alter-var-root #'config-resource (constantly (io/resource phoenix-config)))
-  (alter-var-root #'system (constantly (make-system @!location)))
+  (alter-var-root #'system (constantly (make-system @!location))))
 
-  (when-let [nrepl-port (:phoenix/nrepl-port (read-string (slurp (io/resource phoenix-config))))]
-    (start-nrepl! nrepl-port project))
+(defn- init-nrepl! [{phoenix-config :phoenix/config, :as project}]
+  (assert-config phoenix-config)
   
-  (start!))
+  (when-let [nrepl-port (:phoenix/nrepl-port (read-string (slurp (io/resource phoenix-config))))]
+    (start-nrepl! nrepl-port project)))
