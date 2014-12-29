@@ -69,8 +69,7 @@
 (defn- init-phoenix! [{phoenix-config :phoenix/config, :as project}]
   (assert-config phoenix-config)
   
-  (alter-var-root #'config-resource (constantly (io/resource phoenix-config)))
-  (alter-var-root #'system (constantly (make-system @!location))))
+  (alter-var-root #'config-resource (constantly (io/resource phoenix-config))))
 
 (defn- init-nrepl! [{phoenix-config :phoenix/config, :as project}]
   (assert-config phoenix-config)
