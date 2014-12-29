@@ -1,6 +1,7 @@
 (ns phoenix-sample.service.handler
   (:require [phoenix-sample.service.db :as db]
-            [bidi.ring :refer [make-handler]]
+            [phoenix.modules.cljs :as cljs]
+            [bidi.ring :refer [make-handler ->Resources ->Resources]]
             [clojure.tools.logging :as log]
             [com.stuartsierra.component :refer [Lifecycle]]
             [medley.core :as m]
@@ -8,11 +9,11 @@
             [ring.middleware.format :refer [wrap-restful-format]]
             [ring.util.response :refer [response status]]))
 
-(def routes
-  [["/object/" :oid] {:get :object-lookup
-                      :put :object-set}])
+(def site-routes
+  ["" {["/object/" :oid] {:get :object-lookup
+                          :put :object-set}}])
 
-(defn handlers [db]
+(defn handlers [{:keys [db]}]
   (->> {:object-lookup (fn [req]
                          (response (db/get-obj db (get-in req [:route-params :oid]))))
         
@@ -36,5 +37,11 @@
   (stop [this] this)
 
   WebRequestHandler
-  (request-handler [{:keys [db]}]
-    (make-handler routes (handlers db))))
+  (request-handler [{:keys [db cljs]}]
+    (make-handler ["" [site-routes
+                       
+                       (let [{:keys [web-context-path resource-prefix]} cljs]
+                         [web-context-path (bidi.ring/resources {:prefix resource-prefix})])]]
+                  
+                  (some-fn (handlers {:db db})
+                           #(when (fn? %) %)))))

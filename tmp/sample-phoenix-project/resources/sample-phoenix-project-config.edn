@@ -5,14 +5,24 @@
       :port 3306}
 
  :web-handler {::component phoenix-sample.service.handler/map->AppHandler
-               :db ::dep}
+               :db ::dep
+               :cljs ::dep}
 
  :server {::component phoenix.modules.http-kit/map->WebServer
           :handler [::dep :web-handler]
           :port 3000}
 
+ :cljs {::component phoenix.modules.cljs/make-cljs-compiler
+        :modules [{:name :main
+                   :mains #{'phoenix-sample.ui.app}
+                   :dependencies nil}]
+        :source-path "ui-src"
+        :web-context-path "/js"
+        :resource-prefix "js"
+        :output-dir "target/resources/js/"}
+
  :phoenix/environments {"stg" {:server {:port 8080}}}
  
- :phoenix/hosts {"graphite" {:server {:port 3001}}}}
+ :phoenix/hosts {"graphite" {:server {:port 3002}}}}
 
 
