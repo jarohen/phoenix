@@ -8,6 +8,9 @@
             [modular.ring :refer [WebRequestHandler]]
             [ring.util.response :refer [response content-type]]))
 
+;; This is all in one NS for now, but you'll likely want to split it
+;; out when your webapp grows!
+
 (def site-routes
   ["" {"/" {:get ::page-handler}
        "/css" {"/site.css" {:get ::site-css}}}])
@@ -36,6 +39,12 @@
                 (-> (response (css/site-css))
                     (content-type "text/css")))})
 
+(def api-routes
+  ["/api" {}])
+
+(defn api-handlers []
+  )
+
 (defrecord AppHandler []
   Lifecycle
   (start [this] this)
@@ -44,9 +53,11 @@
   WebRequestHandler
   (request-handler [{:keys [db cljs-compiler]}]
     (make-handler ["" [site-routes
+                       api-routes
                        
                        (let [{:keys [web-context-path resource-prefix]} cljs-compiler]
                          [web-context-path (bidi.ring/resources {:prefix resource-prefix})])]]
                   
                   (some-fn (site-handlers cljs-compiler)
+                           (api-handlers)
                            #(when (fn? %) %)))))
