@@ -55,7 +55,8 @@
   (reset! !started? false))
 
 (defn reload! [& [{:keys [environment host user] :as new-location}]]
-  (stop!)
+  (when @!started?
+    (stop!))
   (when new-location
     (set-location! new-location))
   (start!))
