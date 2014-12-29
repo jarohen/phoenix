@@ -15,7 +15,8 @@
 
 (defn extract-location-config [{environments :phoenix/environments, hosts :phoenix/hosts, :as config}]
   {:general (dissoc config :phoenix/environments :phoenix/hosts)
-   :hosts (m/map-vals #(dissoc % :phoenix/users) hosts)
+   :hosts (some->> hosts
+                   (m/map-vals #(dissoc % :phoenix/users)))
    :hosts-users (->> (for [[hostname {users :phoenix/users}] hosts
                            [user host-user-config] users]
                        [[hostname user] host-user-config])
