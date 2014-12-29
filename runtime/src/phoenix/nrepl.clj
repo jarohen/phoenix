@@ -12,11 +12,13 @@
   (apply nrepl/default-handler
          (map resolve-middleware nrepl-middleware)))
 
-(defn start-nrepl! [nrepl-port & [{:keys [repl-options target-path]} :as project]]
+(defn start-nrepl! [nrepl-port & [{:keys [repl-options target-path root]} :as project]]
   (when target-path
-    (doto (io/file target-path "repl-port")
-      (spit nrepl-port)
-      (.deleteOnExit)))
+    (doseq [port-file [(io/file target-path "repl-port")
+                       (io/file root ".nrepl-port")]]
+      (doto port-file
+        (spit nrepl-port)
+        (.deleteOnExit))))
 
   (let [server (nrepl/start-server :port nrepl-port
                                    :handler (repl-handler repl-options))]
