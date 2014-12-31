@@ -22,3 +22,6 @@
       (server))
     
     (dissoc this :server)))
+
+(defn make-web-server [opts]
+  (map->WebServer opts))
