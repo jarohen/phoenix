@@ -13,7 +13,7 @@
 
 ;; ------------------------------------------------------------
 
-;; Below this line is only required for the SPLAT welcome page, feel
+;; Below this line is only required for the Phoenix welcome page, feel
 ;; free to just delete all of it when you want to get cracking on your
 ;; own project!
 
@@ -28,12 +28,12 @@
           (f/el
             [:div.container
              [:h2 {::f/style {:margin-top "1em"}}
-              "Hello from SPLAT!"]
+              "Hello from Phoenix!"]
 
              [:h3 "Things to try:"]
                   
              [:ul
-              [:li [:p "In your Clojure REPL (in the 'user' ns), run " [code "(reload-frodo!)"] " to completely reload the webapp without restarting the JVM."]]
+              [:li [:p "In your Clojure REPL, run " [code "(phoenix/reload!)"] " to completely reload the webapp without restarting the JVM."]]
               [:li [:p "Connect to a CLJS bREPL by running " [code "(simple-brepl)"]]]
               [:li
                [:p "Once you've opened the bREPL, reload your browser to make the connection, then you can eval some CLJS."]

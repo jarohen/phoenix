@@ -7,21 +7,38 @@
   
   :dependencies [[org.clojure/clojure "1.7.0-alpha4"]
 
-                 [ring/ring-core "1.2.0"]
+                 [ring/ring-core "1.3.0"]
                  [bidi "1.12.0"]
                  [hiccup "1.0.5"]
                  [garden "1.2.1"]
                  [ring-middleware-format "0.4.0"]
 
+                 [jarohen/phoenix.modules.http-kit "0.1.0-SNAPSHOT"]
+                 [jarohen/phoenix.modules.cljs "0.1.0-SNAPSHOT"]
+
+                 [org.clojure/clojurescript "0.0-2511"]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [jarohen/flow "0.3.0-alpha1"]
 
-                 [org.clojure/clojurescript "0.0-2371"]
-                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]]
+                 [org.clojure/tools.logging "0.3.1"]
+                 [org.slf4j/slf4j-api "1.7.9"]
+                 [org.apache.logging.log4j/log4j-slf4j-impl "2.1"]
+                 [org.apache.logging.log4j/log4j-core "2.1"]]
 
-  :plugins [[jarohen/simple-brepl "0.1.2"]]
+  :exclusions [org.clojure/clojure]
 
-  :frodo/config-resource "{{name}}-config.edn"
+  :plugins [[jarohen/phoenix "0.1.0-SNAPSHOT"]
+            [jarohen/simple-brepl "0.1.2"]
+            [lein-shell "0.4.0"]]
 
-  :source-paths ["src" "target/generated/clj"]
+  :phoenix/config "{{name}}-config.edn"
 
-  :resource-paths ["resources" "target/resources"])
+  :resource-paths ["resources" "target/resources"]
+
+  :aliases {"dev" ["do"
+                   ["shell" "mkdir" "-p"
+                    "target/resources"]
+                   
+                   "phoenix"]
+            
+            "start" ["trampoline" "phoenix"]})

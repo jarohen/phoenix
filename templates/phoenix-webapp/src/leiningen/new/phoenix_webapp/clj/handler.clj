@@ -1,51 +1,49 @@
 (ns {{name}}.service.handler
   (:require [{{name}}.service.css :as css]
-            [ring.util.response :refer [response content-type]]
-            [ring.middleware.format :refer [wrap-restful-format]]
-            [clojure.java.io :as io]
-            [bidi.bidi :refer [make-handler]]
-            [bidi.ring :refer [->WrapMiddleware]]
-            [hiccup.page :refer [html5 include-css include-js]]
-            [simple-brepl.service :refer [brepl-js]]
+            [bidi.bidi :as bidi]
+            [bidi.ring :refer [make-handler]]
             [com.stuartsierra.component :refer [Lifecycle]]
-            [modular.ring :refer [WebRequestHandler]]))
+            [hiccup.page :refer [html5 include-css include-js]]
+            [modular.ring :refer [WebRequestHandler]]
+            [phoenix.modules.cljs :as cljs]
+            [ring.util.response :refer [response content-type]]))
 
-(defn page-frame []
-  (html5
-   [:head
-    [:title "{{name}} - Phoenix Web Application"]
+;; This is all in one NS for now, but you'll likely want to split it
+;; out when your webapp grows!
 
-    [:script (brepl-js)]
+(def site-routes
+  ["" {"/" {:get ::page-handler}
+       "/css" {"/site.css" {:get ::site-css}}}])
 
-    (include-css "/css/site.css")
+(defn page-handler [cljs-compiler]
+  (fn [req]
+    (-> (response
+         (html5
+          [:head
+           [:title "{{name}} - CLJS Single Page Web Application"]
+     
+           (include-js "//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js")
+           (include-js "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
+           (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
+
+           (include-js (get-in (cljs/compiler-settings cljs-compiler) [:modules :main]))
+           (include-css (bidi/path-for site-routes ::site-css :request-method :get))]
     
-    (include-js "//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js")
-    (include-js "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
-    (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
-    
-    (if (io/resource "js/goog/base.js")
-      (list (include-js "/js/goog/base.js")
-            (include-js "/js/{{name}}.js")
-            [:script "goog.require('{{sanitized}}.ui.app');"])
-      
-      (include-js "/js/{{name}}.js"))]
-   
-   [:body]))
+          [:body]))
 
-(defn site-routes []
-  (routes
-    (GET "/" [] (response (page-frame)))
+        (content-type "text/html"))))
 
-    (resources "/js" {:root "js"})
-    (resources "/img" {:root "img"})
-    
-    (GET "/css/site.css" []
-      (-> (response (css/site-css))
-          (content-type "text/css")))))
+(defn site-handlers [cljs-compiler]
+  {::page-handler (page-handler cljs-compiler)
+   ::site-css (fn [req]
+                (-> (response (css/site-css))
+                    (content-type "text/css")))})
 
-(defn api-routes []
-  {"/api" (->WrapMiddleware {}
-                            #(wrap-restful-format % :formats [:edn :json-kw]))})
+(def api-routes
+  ["/api" {}])
+
+(defn api-handlers []
+  {})
 
 (defrecord AppHandler []
   Lifecycle
@@ -53,8 +51,13 @@
   (stop [this] this)
 
   WebRequestHandler
-  (request-handler [this]
-    (make-handler )))
-
-(defn app-handler []
-  (map->AppHandler {}))
+  (request-handler [{:keys [db cljs-compiler]}]
+    (make-handler ["" [site-routes
+                       api-routes
+                       
+                       (let [{:keys [web-context-path resource-prefix]} cljs-compiler]
+                         [web-context-path (bidi.ring/resources {:prefix resource-prefix})])]]
+                  
+                  (some-fn (site-handlers cljs-compiler)
+                           (api-handlers)
+                           #(when (fn? %) %)))))
