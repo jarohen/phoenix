@@ -9,13 +9,9 @@
             [clojure.core.async :as a :refer [go-loop]]
             [clojure.tools.logging :as log]))
 
-(defmacro with-shadow-build-logs [& body]
-  `(log/with-logs ['shadow.cljs.build :info :warn]
-     ~@body))
-
 (defonce !initial-state
   (future
-    (with-shadow-build-logs
+    (log/with-logs ['shadow.cljs.build :debug :warn]
       (-> (cljs/init-state)
           (cljs/step-find-resources-in-jars)
           (cljs/step-finalize-config)
@@ -36,7 +32,7 @@
                             :or {pretty-print? true
                                  optimizations :none}
                             :as opts}]
-  (with-shadow-build-logs
+  (log/with-logs ['shadow.cljs.build :debug :warn]
     (-> @!initial-state
         (cond-> source-maps? (cljs/enable-source-maps))
         (assoc :optimizations optimizations
@@ -52,30 +48,34 @@
   c/Lifecycle
   (start [{:keys [optimizations] :as this}]
     (let [stop-ch (a/chan)
-          {:keys [modules] :as initial-state} (init-compiler-state this)
-          !state (atom initial-state)]
-      (go-loop []
-        (let [new-state (swap! !state
-                               (fn [state]
-                                 (with-shadow-build-logs
-                                   (let [compiled-state (-> state
-                                                            (cljs/step-reload-modified)
-                                                            (cljs/step-compile-modules))]
-                                     (if (and optimizations
-                                              (not= optimizations :none))
-                                       (-> compiled-state
-                                           (cljs/closure-optimize)
-                                           (cljs/flush-to-disk)
-                                           (cljs/flush-modules-to-disk))
-                                       
-                                       (-> compiled-state
-                                           (cljs/flush-unoptimized)))))))]
+          {:keys [modules] :as initial-state} (init-compiler-state this)]
+      
+      (go-loop [cljs-state initial-state]
+        (log/info "Compiling CLJS")
+        
+        (let [new-state (let [compiled-state (log/with-logs ['shadow.cljs.build :info :warn]
+                                               (-> cljs-state
+                                                   (cljs/step-reload-modified)
+                                                   (cljs/step-compile-modules)))]
+                          
+                          (log/with-logs ['shadow.cljs.build :debug :warn]
+                            (if (and optimizations
+                                     (not= optimizations :none))
+                              (-> compiled-state
+                                  (cljs/closure-optimize)
+                                  (cljs/flush-to-disk)
+                                  (cljs/flush-modules-to-disk))
+                              
+                              (-> compiled-state
+                                  (cljs/flush-unoptimized)))))]
+          
+          (log/info "Compiled CLJS.")
+          
           (a/alt!
-            (a/thread (with-shadow-build-logs
+            (a/thread (log/with-logs ['shadow.cljs.build :info :warn]
                         (cljs/wait-and-reload! new-state)))
             ([new-state]
-             (reset! !state new-state)
-             (recur))
+             (recur new-state))
 
             stop-ch nil)))
 
