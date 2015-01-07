@@ -1,5 +1,6 @@
 (ns leiningen.phoenix
-  (:require [leinjacker.eval :refer [eval-in-project]]
+  (:require [leiningen.uberjar :as u]
+            [leinjacker.eval :refer [eval-in-project]]
             [phoenix.plugin :refer [select-project-keys]]))
 
 (defn server
@@ -16,6 +17,28 @@
                         (phoenix/start!))
                      `(require '~'phoenix))))
 
+(defn uberjar-project-map [project]
+  (-> project
+      (assoc :main 'phoenix.main)
+      (update-in [:aot] conj 'phoenix.main)
+      (update-in [:filespecs] conj {:type :bytes
+                                    :path "META-INF/phoenix-config-resource"
+                                    :bytes (:phoenix/config project)})
+      (update-in [:filespecs] conj {:type :bytes
+                                    :path "META-INF/phoenix-repl-options.edn"
+                                    :bytes (pr-str (:repl-options project))})))
+
+(defn uberjar
+  "Creates an uberjar of the Phoenix application
+
+   Usage: lein phoenix uberjar"
+  [project]
+  
+  (let [project (-> project
+                    uberjar-project-map
+                    (vary-meta #(update-in % [:without-profiles] uberjar-project-map)))]
+    (u/uberjar project 'phoenix.main)))
+
 (defn phoenix
   "Plugin to configure and co-ordinate a Component-based system
 
@@ -30,4 +53,5 @@
 
   (case command
     "server" (server project)
+    "uberjar" (uberjar project)
     nil (server project)))
