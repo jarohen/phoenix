@@ -28,7 +28,7 @@
           modules))
 
 (defn init-compiler-state [{:keys [source-maps? pretty-print? optimizations modules
-                                   web-context-path output-dir source-path]
+                                   web-context-path externs output-dir source-path]
                             :or {pretty-print? true
                                  optimizations :none}
                             :as opts}]
@@ -38,7 +38,8 @@
         (assoc :optimizations optimizations
                :pretty-print pretty-print?
                :public-path web-context-path
-               :public-dir output-dir)
+               :public-dir output-dir
+               :externs externs)
         
         (cljs/step-find-resources source-path)
         
