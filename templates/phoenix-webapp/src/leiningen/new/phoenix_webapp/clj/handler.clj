@@ -12,8 +12,8 @@
 ;; out when your webapp grows!
 
 (def site-routes
-  ["" {"/" {:get ::page-handler}
-       "/css" {"/site.css" {:get ::site-css}}}])
+  ["" {"/" {:get :page-handler}
+       "/css" {"/site.css" {:get :site-css}}}])
 
 (defn page-handler [cljs-compiler]
   (fn [req]
@@ -27,17 +27,17 @@
            (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
 
            (include-js (get-in (cljs/compiler-settings cljs-compiler) [:modules :main]))
-           (include-css (bidi/path-for site-routes ::site-css :request-method :get))]
+           (include-css (bidi/path-for site-routes :site-css :request-method :get))]
     
           [:body]))
 
         (content-type "text/html"))))
 
 (defn site-handlers [cljs-compiler]
-  {::page-handler (page-handler cljs-compiler)
-   ::site-css (fn [req]
-                (-> (response (css/site-css))
-                    (content-type "text/css")))})
+  {:page-handler (page-handler cljs-compiler)
+   :site-css (fn [req]
+                    (-> (response (css/site-css))
+                        (content-type "text/css")))})
 
 (def api-routes
   ["/api" {}])
