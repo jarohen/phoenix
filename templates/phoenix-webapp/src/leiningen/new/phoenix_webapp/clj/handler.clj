@@ -6,7 +6,8 @@
             [hiccup.page :refer [html5 include-css include-js]]
             [modular.ring :refer [WebRequestHandler]]
             [phoenix.modules.cljs :as cljs]
-            [ring.util.response :refer [response content-type]]))
+            [ring.util.response :refer [response content-type]]
+            [simple-brepl.service :refer [brepl-js]]))
 
 ;; This is all in one NS for now, but you'll likely want to split it
 ;; out when your webapp grows!
@@ -25,6 +26,8 @@
            (include-js "//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js")
            (include-js "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
            (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
+
+           [:script (brepl-js)]
 
            (include-js (get-in (cljs/compiler-settings cljs-compiler) [:modules :main]))
            (include-css (bidi/path-for site-routes :site-css :request-method :get))]
