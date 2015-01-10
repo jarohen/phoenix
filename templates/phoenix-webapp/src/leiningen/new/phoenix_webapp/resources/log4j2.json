@@ -22,6 +22,11 @@
                 {
                     "name":"shadow.cljs.build",
                     "level":"info"
+                },
+
+                {
+                    "name":"io.netty",
+                    "level":"info"
                 }
             ]
         }

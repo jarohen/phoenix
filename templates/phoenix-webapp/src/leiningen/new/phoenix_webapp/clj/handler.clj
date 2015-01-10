@@ -63,4 +63,8 @@
                   
                   (some-fn (site-handlers cljs-compiler)
                            (api-handlers)
-                           #(when (fn? %) %)))))
+
+                           #(when (fn? %) %)
+                           
+                           (constantly {:status 404
+                                        :body "Not found."})))))

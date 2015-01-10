@@ -3,7 +3,7 @@
  :web-handler {::component {{name}}.service.handler/map->AppHandler
                :cljs-compiler ::dep}
 
- :server {::component phoenix.modules.http-kit/make-web-server
+ :server {::component phoenix.modules.aleph/make-web-server
           :handler [::dep :web-handler]
           :port 3000}
 

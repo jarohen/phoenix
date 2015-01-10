@@ -13,7 +13,7 @@
                  [garden "1.2.1"]
                  [ring-middleware-format "0.4.0"]
 
-                 [jarohen/phoenix.modules.http-kit "0.1.0-SNAPSHOT"]
+                 [jarohen/phoenix.modules.aleph "0.1.0-SNAPSHOT"]
                  [jarohen/phoenix.modules.cljs "0.1.0-SNAPSHOT"]
 
                  [org.clojure/clojurescript "0.0-2511"]
