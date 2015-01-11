@@ -65,7 +65,8 @@
                                       (assoc-in component-acc [:static-config config-key] static-config)
                                       (update-in component-acc [:component-deps] assoc config-key dependent-key))))
                                 
-                                {:component component
+                                {:component-id dep-key
+                                 :component component
                                  :component-deps component-deps
                                  :static-config component-config}
                                 

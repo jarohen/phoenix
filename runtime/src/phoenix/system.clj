@@ -2,17 +2,18 @@
   (:require [medley.core :as m]
             [com.stuartsierra.component :as c]))
 
-(defn make-component [[id {:keys [static-config component]}]]
+(defn make-component [{:keys [component-id static-config component]}]
   (when component
     (require (symbol (namespace component))))
 
   (try
-    [id (if component
-          (eval `(~component ~static-config))
-          static-config)]
+    (if component
+      (eval `(~component ~static-config))
+      static-config)
+    
     (catch Exception e
       (throw (ex-info "Failed initialising component"
-                      {:component id
+                      {:component component-id
                        :generator-fn component
                        :config static-config}
                       e)))))
@@ -24,8 +25,8 @@
 
 (defn phoenix-system [system-config]
   (-> (apply c/system-map (->> system-config
-                               (map make-component)
-                               (into {})
+                               (m/map-vals make-component)
+                               seq
                                (apply concat)))
       
       (c/system-using (system-deps system-config))))
