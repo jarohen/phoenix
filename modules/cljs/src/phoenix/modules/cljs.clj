@@ -13,12 +13,20 @@
 
 (defonce !initial-state
   (future
-    (log/with-logs ['shadow.cljs.build :debug :warn]
-      (-> (cljs/init-state)
-          (cljs/step-find-resources-in-jars)
-          (cljs/step-finalize-config)
-          (cljs/step-compile-core)
-          #_(cljs/step-find-resources "lib/js-closure" {:reloadable false})))))
+    (-> (cljs/init-state)
+        (assoc :logger (reify cljs/BuildLog
+                         (log-warning [_ msg]
+                           (log/log 'shadow.cljs.build :warn nil msg))
+
+                         (log-progress [_ msg]
+                           (log/log 'shadow.cljs.build :debug nil msg))
+
+                         (log-time-start [_ msg]
+                           (log/log 'shadow.cljs.build :info nil (format "-> %s" msg)))
+
+                         (log-time-end [_ msg ms]
+                           (log/log 'shadow.cljs.build :info nil (format "<- %s (%dms)" msg ms)))))
+        (cljs/step-find-resources-in-jars))))
 
 (defprotocol CLJSComponent
   (bidi-routes [_])
@@ -36,18 +44,48 @@
                             :or {pretty-print? true
                                  optimizations :none}
                             :as opts}]
-  (log/with-logs ['shadow.cljs.build :debug :warn]
-    (-> @!initial-state
-        (cond-> source-maps? (cljs/enable-source-maps))
-        (assoc :optimizations optimizations
-               :pretty-print pretty-print?
-               :public-path web-context-path
-               :public-dir output-dir
-               :externs externs)
+  (-> @!initial-state
+      (cond-> source-maps? (cljs/enable-source-maps))
+      (assoc :optimizations optimizations
+             :pretty-print pretty-print?
+             :public-path web-context-path
+             :public-dir output-dir
+             :externs externs)
+      
+      (cljs/step-find-resources source-path)
+      
+      (add-modules modules)
+      (cljs/step-finalize-config)
+      (cljs/step-compile-core)))
+
+(defn do-compile-run [{:keys [optimizations] :as state}]
+  (log/info "Compiling CLJS...")
+  
+  (let [state-with-compiled-modules (-> state
+                                        (cljs/step-reload-modified)
+                                        (cljs/step-compile-modules))
+
+        _ (log/info "Compiled CLJS.")
         
-        (cljs/step-find-resources source-path)
-        
-        (add-modules modules))))
+        optimized-state (if (and optimizations
+                                 (not= optimizations :none))
+                          (let [_ (log/info "Optimizing CLJS...")
+
+                                optimized-state (-> state-with-compiled-modules
+                                                    (cljs/closure-optimize)
+                                                    (cljs/flush-to-disk)
+                                                    (cljs/flush-modules-to-disk))
+                                
+                                _ (log/info "Optimized CLJS.")]
+                            
+                            optimized-state)
+                          
+                          (-> state-with-compiled-modules
+                              (cljs/flush-unoptimized)))]
+    
+    
+    
+    optimized-state))
 
 (defrecord CLJSCompiler []
   c/Lifecycle
@@ -56,31 +94,10 @@
           {:keys [modules] :as initial-state} (init-compiler-state this)]
       
       (go-loop [cljs-state initial-state]
-        (log/info "Compiling CLJS")
-        
-        (let [new-state (let [compiled-state (log/with-logs ['shadow.cljs.build :info :warn]
-                                               (-> cljs-state
-                                                   (cljs/step-reload-modified)
-                                                   (cljs/step-compile-modules)))]
-                          
-                          (log/with-logs ['shadow.cljs.build :debug :warn]
-                            (if (and optimizations
-                                     (not= optimizations :none))
-                              (-> compiled-state
-                                  (cljs/closure-optimize)
-                                  (cljs/flush-to-disk)
-                                  (cljs/flush-modules-to-disk))
-                              
-                              (-> compiled-state
-                                  (cljs/flush-unoptimized)))))]
-          
-          (log/info "Compiled CLJS.")
-          
+        (let [new-state (do-compile-run cljs-state)]
           (a/alt!
-            (a/thread (log/with-logs ['shadow.cljs.build :info :warn]
-                        (cljs/wait-and-reload! new-state)))
-            ([new-state]
-             (recur new-state))
+            (a/thread (cljs/wait-for-modified-files! new-state))
+            ([modified-files] (recur (cljs/reload-modified-files! new-state modified-files)))
 
             stop-ch nil)))
 
@@ -127,4 +144,36 @@
   (if built?
     (map->PreBuiltCLJSComponent (combine-opts opts :build))
     (map->CLJSCompiler (combine-opts opts :dev))))
+
+(comment
+  (def foo-state
+    (-> (cljs/init-state)
+        (assoc :optimizations :none
+               :pretty-print true
+               :work-dir (io/file "target/cljs-work")
+               :cache-dir (io/file "target/cljs-cache")
+               :public-dir (io/file "target/resources/js")
+               :public-path "/js"
+               :logger (reify cljs/BuildLog
+                         (log-warning [_ msg]
+                           (log/log 'shadow.cljs.build :warn nil msg))
+
+                         (log-progress [_ msg]
+                           (log/log 'shadow.cljs.build :debug nil msg))
+
+                         (log-time-start [_ msg]
+                           (log/log 'shadow.cljs.build :info nil (format "-> %s" msg)))
+
+                         (log-time-end [_ msg ms]
+                           (log/log 'shadow.cljs.build :info nil (format "<- %s (%dms)" msg ms)))))
+      
+        (cljs/step-find-resources-in-jars)
+        (cljs/step-find-resources "ui-src")
+
+        (cljs/step-finalize-config)
+        (cljs/step-compile-core)
+        (cljs/step-configure-module :main ['test-project.ui.app] #{})
+      
+        (cljs/step-compile-modules)
+        (cljs/flush-unoptimized))))
 
