@@ -28,6 +28,14 @@
                                     :path "META-INF/phoenix-repl-options.edn"
                                     :bytes (pr-str (:repl-options project))})))
 
+(defn build-system [project]
+  (eval-in-project (assoc project
+                     :eval-in :classloader)
+
+                   `(#'phoenix.build/build-system '~project)
+
+                   '(require 'phoenix.build)))
+
 (defn uberjar
   "Creates an uberjar of the Phoenix application
 
@@ -36,7 +44,9 @@
   
   (let [project (-> project
                     uberjar-project-map
-                    (vary-meta #(update-in % [:without-profiles] uberjar-project-map)))]
+                    (vary-meta #(update-in % [:without-profiles] uberjar-project-map))
+                    build-system)]
+    
     (u/uberjar project 'phoenix.main)))
 
 (defn phoenix
