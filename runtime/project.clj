@@ -10,7 +10,9 @@
   
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/tools.namespace "0.2.7"]
-                 [org.clojure/tools.nrepl "0.2.6"]                 
+                 [org.clojure/tools.nrepl "0.2.6"]
+                 [org.clojure/tools.logging "0.3.1"]
+                 
                  [com.stuartsierra/component "0.2.2"]
                  [com.stuartsierra/dependency "0.1.1"]
                  [medley "0.5.3"]]
