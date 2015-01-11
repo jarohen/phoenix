@@ -7,6 +7,7 @@
                  [com.stuartsierra/component "0.2.2"]
                  [thheller/shadow-build "0.5.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [org.clojure/tools.logging "0.3.1"]]
+                 [org.clojure/tools.logging "0.3.1"]
+                 [bidi "1.14.0"]]
 
   :profiles {:dev {:dependencies [[org.clojure/clojurescript "0.0-2511"]]}})

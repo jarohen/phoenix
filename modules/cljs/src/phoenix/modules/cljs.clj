@@ -7,7 +7,9 @@
             [shadow.cljs.build :as cljs]
             [clojure.java.io :as io]
             [clojure.core.async :as a :refer [go-loop]]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [bidi.ring :as br]
+            [bidi.server :as bs]))
 
 (defonce !initial-state
   (future
@@ -19,7 +21,9 @@
           #_(cljs/step-find-resources "lib/js-closure" {:reloadable false})))))
 
 (defprotocol CLJSComponent
-  (compiler-settings [_]))
+  (bidi-routes [_])
+  (cljs-handler [_])
+  (path-for-module [_ module]))
 
 (defn add-modules [state modules]
   (reduce (fn [state {:keys [name mains dependencies]}]
@@ -27,7 +31,7 @@
           state
           modules))
 
-(defn init-compiler-state [{:keys [source-maps? pretty-print? optimizations modules
+(defn init-compiler-state [{:keys [source-maps? pretty-print? modules optimizations
                                    web-context-path externs output-dir source-path]
                             :or {pretty-print? true
                                  optimizations :none}
@@ -88,12 +92,39 @@
     (a/close! stop-ch))
 
   CLJSComponent
-  (compiler-settings [{:keys [web-context-path modules resource-prefix]}]
-    {:web-context-path web-context-path
-     :resource-prefix resource-prefix
-     :modules (->> (for [[module {:keys [js-name]}] modules]
-                     [module (format "%s/%s" web-context-path js-name)])
-                   (into {}))}))
+  (bidi-routes [{:keys [web-context-path output-dir]}]
+    [web-context-path (bs/files {:dir output-dir})])
 
-(defn make-cljs-compiler [opts]
-  (map->CLJSCompiler opts))
+  (cljs-handler [this]
+    (br/make-handler (bidi-routes this)))
+
+  (path-for-module [{:keys [web-context-path modules]} module]
+    (format "%s/%s" web-context-path (get-in modules [module :js-name]))))
+
+(defrecord PreBuiltCLJSComponent []
+  c/Lifecycle
+  (start [this]
+    this)
+  (stop [this]
+    this)
+
+  CLJSComponent
+  (bidi-routes [{:keys [web-context-path classpath-prefix] :as this}]
+    [web-context-path (bs/resources {:prefix classpath-prefix})])
+
+  (cljs-handler [this]
+    (br/make-handler (bidi-routes this)))
+
+  (path-for-module [{:keys [web-context-path modules]} module]
+    (format "%s/%s" web-context-path (get-in modules [module :js-name]))))
+
+(defn combine-opts [opts mode]
+  (-> opts
+      (dissoc :dev :build)
+      (merge (get opts mode))))
+
+(defn make-cljs-compiler [{built? :phoenix/built?, :as opts}]
+  (if built?
+    (map->PreBuiltCLJSComponent (combine-opts opts :build))
+    (map->CLJSCompiler (combine-opts opts :dev))))
+

@@ -29,7 +29,7 @@
 
            [:script (brepl-js)]
 
-           (include-js (get-in (cljs/compiler-settings cljs-compiler) [:modules :main]))
+           (include-js (cljs/path-for-module cljs-compiler :main))
            (include-css (bidi/path-for site-routes :site-css :request-method :get))]
     
           [:body]))
@@ -58,8 +58,7 @@
     (make-handler ["" [site-routes
                        api-routes
                        
-                       (let [{:keys [web-context-path resource-prefix]} cljs-compiler]
-                         [web-context-path (bidi.ring/resources {:prefix resource-prefix})])]]
+                       (cljs/bidi-routes cljs-compiler)]]
                   
                   (some-fn (site-handlers cljs-compiler)
                            (api-handlers)

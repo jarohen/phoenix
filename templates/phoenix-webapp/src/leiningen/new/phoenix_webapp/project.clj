@@ -8,7 +8,7 @@
   :dependencies [[org.clojure/clojure "1.7.0-alpha4"]
 
                  [ring/ring-core "1.3.0"]
-                 [bidi "1.12.0"]
+                 [bidi "1.14.0"]
                  [hiccup "1.0.5"]
                  [garden "1.2.1"]
                  [ring-middleware-format "0.4.0"]
