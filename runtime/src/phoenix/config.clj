@@ -1,9 +1,15 @@
 (ns phoenix.config
   (:require [phoenix.location :as l]
             [phoenix.jar :as jar]
+            [clojure.java.io :as io]
             [clojure.set :as set]
             [com.stuartsierra.dependency :as deps]
             [medley.core :as m]))
+
+(defn assert-config [config-resource]
+  (assert (and config-resource
+               (io/resource config-resource))
+          "Please make sure you have a valid config resource specified at ':phoenix/config' in your 'project.clj'"))
 
 (defn read-string-in-ns [s]
   (binding [*ns* (find-ns 'phoenix.config)]
