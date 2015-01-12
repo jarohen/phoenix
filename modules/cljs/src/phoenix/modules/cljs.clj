@@ -19,13 +19,13 @@
                            (log/log 'shadow.cljs.build :warn nil msg))
 
                          (log-progress [_ msg]
-                           (log/log 'shadow.cljs.build :debug nil msg))
+                           (log/log 'shadow.cljs.build :trace nil msg))
 
                          (log-time-start [_ msg]
-                           (log/log 'shadow.cljs.build :info nil (format "-> %s" msg)))
+                           (log/log 'shadow.cljs.build :debug nil (format "-> %s" msg)))
 
                          (log-time-end [_ msg ms]
-                           (log/log 'shadow.cljs.build :info nil (format "<- %s (%dms)" msg ms)))))
+                           (log/log 'shadow.cljs.build :debug nil (format "<- %s (%dms)" msg ms)))))
         
         (cljs/step-find-resources-in-jars))))
 
