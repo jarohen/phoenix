@@ -33,8 +33,6 @@
 
   :phoenix/config "{{name}}-config.edn"
 
-  :resource-paths ["resources" "target/resources"]
-
   :aliases {"dev" ["do"
                    ["shell" "mkdir" "-p"
                     "target/resources"]
