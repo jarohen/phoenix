@@ -12,6 +12,10 @@
                             :mains #{'{{name}}.ui.app}
                             :dependencies nil}]
                  :source-path "ui-src"
+
                  :web-context-path "/js"
-                 :resource-prefix "js"
-                 :output-dir "target/resources/js/"}}
+                 :output-dir "target/cljs/"
+
+                 :dev {:optimizations :none}
+                 :build {:optimizations :advanced
+                         :classpath-prefix "js"}}}
