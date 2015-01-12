@@ -36,7 +36,7 @@
 
                             :otherwise (assoc-in acc [:component-config k] v)))
 
-                        {:phoenix/built? jar/built?}
+                        {:component-config {:phoenix/built? jar/built?}}
                         component-config))
               config))
 
@@ -97,3 +97,4 @@
                    normalise-deps)
         sorted-deps (calculate-deps config)]
     (with-static-config config sorted-deps)))
+
