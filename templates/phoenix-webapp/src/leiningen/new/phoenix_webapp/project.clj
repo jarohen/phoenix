@@ -16,7 +16,7 @@
                  [jarohen/phoenix.modules.aleph "0.1.0-SNAPSHOT"]
                  [jarohen/phoenix.modules.cljs "0.1.0-SNAPSHOT"]
 
-                 [org.clojure/clojurescript "0.0-2511"]
+                 [org.clojure/clojurescript "0.0-2657"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [jarohen/flow "0.3.0-alpha1"]
 
