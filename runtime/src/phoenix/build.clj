@@ -19,13 +19,17 @@
 (defn- build-component [{:keys [system project] :as acc} component-id]
   (let [component (get system component-id)]
     (if (satisfies? BuiltComponent component)
-      (let [[new-component new-project] (build component project)]
+      (let [build-results (build component project)
+            _ (assert (and (vector? build-results)
+                           (= 2 (count build-results)))
+                      "phoenix.build/BuiltComponent.build should return a pair - the updated component and the updated project map.")
+            [new-component new-project] build-results]
         {:system (assoc system component-id new-component)
          :project new-project})
       
       acc)))
 
-(defn build-system [{phoenix-config :phoenix/config, :as project}]
+(defn build-system [{phoenix-config :phoenix/config, :as project} out-file]
   (config/assert-config phoenix-config)
 
   (let [parsed-config (config/read-config (io/resource phoenix-config)
@@ -37,15 +41,25 @@
 
     (alter-var-root #'phoenix/system (constantly initial-system))
 
-    (-> (reduce (fn [{:keys [system project] :as acc} component-id]
-                  (-> acc
-                      (update-in [:system] populate-deps (get parsed-config component-id))
-                      (build-component component-id)))
+    (->> (reduce (fn [{:keys [system project] :as acc} component-id]
+                   (-> acc
+                       (update-in [:system] populate-deps (get parsed-config component-id))
+                       (build-component component-id)))
 
-                {:system initial-system
-                 :project project}
+                 {:system initial-system
+                  :project project}
 
-                sorted-deps)
+                 sorted-deps)
 
-        :project)))
+         :project
+         pr-str
+         (spit out-file))))
 
+(defn build-system-main [project out-file]
+  (try
+    (build-system project out-file)
+    (System/exit 0)
+
+    (catch Exception e
+      (.printStackTrace e)
+      (System/exit 1))))

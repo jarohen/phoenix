@@ -1,7 +1,8 @@
 (ns leiningen.phoenix
   (:require [leiningen.uberjar :as u]
             [leinjacker.eval :refer [eval-in-project]]
-            [phoenix.plugin :refer [select-project-keys]]))
+            [phoenix.plugin :refer [select-project-keys]])
+  (:import [java.io File]))
 
 (defn server
   "Starts the Phoenix application, as per the configuration file specified in project.clj.
@@ -29,12 +30,15 @@
                                     :bytes (pr-str (:repl-options project))})))
 
 (defn build-system [project]
-  (eval-in-project (assoc project
-                     :eval-in :classloader)
+  (let [project-file (doto (File/createTempFile "phoenix-project" ".edn")
+                       (.deleteOnExit))]
+    (eval-in-project project
 
-                   `(#'phoenix.build/build-system '~project)
+                     `(#'phoenix.build/build-system-main '~project ~(.getAbsolutePath project-file))
 
-                   '(require 'phoenix.build)))
+                     '(require 'phoenix.build))
+
+    (read-string (slurp project-file))))
 
 (defn uberjar
   "Creates an uberjar of the Phoenix application
