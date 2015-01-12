@@ -8,14 +8,18 @@
           :port 3000}
 
  :cljs-compiler {::component phoenix.modules.cljs/make-cljs-compiler
+                 :source-path "ui-src"
+
                  :modules [{:name :main
                             :mains #{'{{name}}.ui.app}
                             :dependencies nil}]
-                 :source-path "ui-src"
 
                  :web-context-path "/js"
                  :output-dir "target/cljs/"
 
-                 :dev {:optimizations :none}
+                 :dev {:optimizations :none
+                       :pretty-print? true}
+                 
                  :build {:optimizations :advanced
+                         :pretty-print? false
                          :classpath-prefix "js"}}}
