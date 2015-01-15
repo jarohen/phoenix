@@ -1,6 +1,7 @@
 (ns leiningen.phoenix
   (:require [leiningen.uberjar :as u]
             [leinjacker.eval :refer [eval-in-project]]
+            [clojure.java.io :as io]
             [phoenix.plugin :refer [select-project-keys]])
   (:import [java.io File]))
 
@@ -18,9 +19,23 @@
                         (phoenix/start!))
                      `(require '~'phoenix))))
 
+(defn include-aotd-main [project]
+  (update-in project [:filespecs] conj {:type :bytes
+                                        :path "phoenix/main.class"
+                                        :bytes (eval-in-project (assoc project :eval-in :classloader)
+
+                                                                `(let [class-file# (clojure.java.io/file "/home/james/src/james/libraries/phoenix/runtime/target/classes/phoenix/main.class")
+                                                                       file-size# (.length class-file#)
+                                                                       buffer# (byte-array file-size#)]
+                                                                   (with-open [is# (clojure.java.io/input-stream class-file#)
+                                                                               dis# (java.io.DataInputStream. is#)]
+                                                                     (.readFully dis# buffer#)
+                                                                     buffer#))
+                                                                
+                                                                '(require 'clojure.java.io))}))
+
 (defn uberjar-project-map [project]
   (-> project
-      (update-in [:aot] conj 'phoenix.main)
       (update-in [:filespecs] conj {:type :bytes
                                     :path "META-INF/phoenix-config-resource"
                                     :bytes (:phoenix/config project)})
@@ -48,6 +63,7 @@
 
   (let [built-project (-> project
                           build-system
+                          include-aotd-main
                           uberjar-project-map)]
     (u/uberjar (-> built-project
                    (vary-meta #(assoc-in % [:without-profiles] built-project)))

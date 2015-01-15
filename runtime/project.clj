@@ -17,4 +17,6 @@
                  [com.stuartsierra/dependency "0.1.1"]
                  [medley "0.5.3"]]
   
-  :resource-paths ["resources" "../common"])
+  :resource-paths ["resources" "../common"]
+
+  :aot [phoenix.main])
