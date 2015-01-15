@@ -20,7 +20,6 @@
 
 (defn uberjar-project-map [project]
   (-> project
-      (assoc :main 'phoenix.main)
       (update-in [:aot] conj 'phoenix.main)
       (update-in [:filespecs] conj {:type :bytes
                                     :path "META-INF/phoenix-config-resource"
