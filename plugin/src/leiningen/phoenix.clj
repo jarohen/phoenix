@@ -38,20 +38,22 @@
 
                      '(require 'phoenix.build))
 
-    (read-string (slurp project-file))))
+    (with-meta (read-string (slurp project-file))
+      (meta project))))
 
 (defn uberjar
   "Creates an uberjar of the Phoenix application
 
    Usage: lein phoenix uberjar"
   [project]
-  
-  (let [project (-> project
-                    uberjar-project-map
-                    (vary-meta #(update-in % [:without-profiles] uberjar-project-map))
-                    build-system)]
-    
-    (u/uberjar project 'phoenix.main)))
+
+  (let [built-project (-> project
+                          build-system
+                          uberjar-project-map)]
+    (u/uberjar (-> built-project
+                   (vary-meta #(assoc-in % [:without-profiles] built-project)))
+               
+               'phoenix.main)))
 
 (defn phoenix
   "Plugin to configure and co-ordinate a Component-based system
@@ -69,3 +71,4 @@
     "server" (server project)
     "uberjar" (uberjar project)
     nil (server project)))
+
