@@ -1,6 +1,8 @@
 * http-kit - Phoenix module
 
-This is a module to start an [[http://www.http-kit.org/][http-kit]] web server in a Phoenix system.
+This is a module to start an [[http://www.http-kit.org/][http-kit]] web server in a Phoenix
+system. It's been adapted from Malcolm Sparks's Modular [[https://github.com/juxt/modular/tree/master/modules/http-kit][http-kit
+module]].
 
 ** Getting started
 

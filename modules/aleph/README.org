@@ -1,6 +1,7 @@
 * Aleph - Phoenix module
 
-This is a module to start an [[https://github.com/ztellman/aleph][Aleph]] web server in a Phoenix system.
+This is a module to start an [[https://github.com/ztellman/aleph][Aleph]] web server in a Phoenix
+system. It's been adapted from Malcolm Sparks's Modular [[https://github.com/juxt/modular/tree/master/modules/aleph][Aleph module]].
 
 ** Getting started
 
