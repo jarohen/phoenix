@@ -29,7 +29,12 @@
   (deep-merge general
               (get hosts host)
               (get hosts-users [host user])
-              (get environments environment)))
+              (get environments environment)
+              
+              {:phoenix/includes (concat (:phoenix/includes general)
+                                         (get-in hosts [host :phoenix/includes])
+                                         (get-in hosts-users [[host user] :phoenix/includes])
+                                         (get-in environments [[environment] :phoenix/includes]))}))
 
 (defn combine-config [config location]
   (-> config
