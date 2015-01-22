@@ -9,8 +9,7 @@
             [clojure.java.io :as io]
             [clojure.core.async :as a :refer [go-loop]]
             [clojure.tools.logging :as log]
-            [bidi.ring :as br]
-            [bidi.server :as bs]))
+            [bidi.ring :as br]))
 
 (defprotocol CLJSComponent
   (bidi-routes [_])
@@ -140,7 +139,7 @@
   
   CLJSComponent
   (bidi-routes [{:keys [web-context-path output-dir]}]
-    [web-context-path (bs/files {:dir (.getPath (io/file output-dir "public"))})])
+    [web-context-path (br/files {:dir (.getPath (io/file output-dir "public"))})])
 
   (cljs-handler [this]
     (br/make-handler (bidi-routes this)))
@@ -157,7 +156,7 @@
 
   CLJSComponent
   (bidi-routes [{:keys [web-context-path] :as this}]
-    [web-context-path (bs/resources {:prefix (get-in this [:build :classpath-prefix])})])
+    [web-context-path (br/resources {:prefix (get-in this [:build :classpath-prefix])})])
 
   (cljs-handler [this]
     (br/make-handler (bidi-routes this)))
