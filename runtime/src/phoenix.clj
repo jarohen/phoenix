@@ -68,5 +68,6 @@
   (alter-var-root #'config-resource (constantly (io/resource phoenix-config))))
 
 (defn- init-nrepl! [project]
-  (when-let [nrepl-port (:phoenix/nrepl-port (config/read-config config-resource {:location (l/get-location)}))]
+  (when-let [nrepl-port (get-in (config/read-config config-resource {:location (l/get-location)})
+                                [:phoenix/nrepl-port :static-config])]
     (start-nrepl! nrepl-port project)))
