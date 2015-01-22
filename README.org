@@ -363,6 +363,21 @@ for files that should only be included in a given location.
 (You can use these reader macros throughout the rest of your config as
 well!)
 
+** Building Phoenix-based projects
+
+You can build Phoenix-based projects by running:
+
+#+BEGIN_SRC sh
+  lein phoenix uberjar
+#+END_SRC
+
+This creates an executable JAR file, which can then be run with:
+
+#+BEGIN_SRC sh
+  # Replace this with the actual path to the uberjar
+  java -jar target/myapp-standalone.jar
+#+END_SRC
+
 ** 'Built-in' components
 
 Phoenix has a number of optional 'built-in' components, each with
