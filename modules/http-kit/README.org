@@ -1,0 +1,59 @@
+* http-kit - Phoenix module
+
+This is a module to start an [[http://www.http-kit.org/][http-kit]] web server in a Phoenix system.
+
+** Getting started
+
+Add this in your 'project.clj', as a dependency:
+
+#+BEGIN_SRC clojure
+  [jarohen/phoenix.modules.http-kit "0.0.1"]
+#+END_SRC
+
+In your Phoenix config, add an http-kit web-server component and a
+web-handler component (written by you):
+
+#+BEGIN_SRC clojure
+  {:web-handler {::component myapp.handler/map->WebHandler}
+
+   :server {::component phoenix.modules.http-kit/make-web-server
+            :handler [::dep :web-handler]
+            :port 3000}}
+#+END_SRC
+
+Your web handler should satisfy the =modular.ring/WebRequestHandler=
+protocol - for example:
+
+#+BEGIN_SRC clojure
+  (ns myapp.handler
+    (:require [bidi.ring :refer [make-handler]]
+              [compojure.core :refer [routes GET]]
+              [com.stuartsierra.component :as c]
+              [modular.ring :refer [WebRequestHandler]]
+              [ring.util.response :refer [response content-type]]))
+
+  (defrecord AppHandler []
+    c/Lifecycle
+    (start [this] this)
+    (stop [this] this)
+
+    WebRequestHandler
+    (request-handler [this]
+
+      ;; e.g. Compojure
+      (routes
+        (GET "/" {:as req}
+          (handle-page req))
+        (GET "/css/site.css" []
+          (-> (response ...)
+              (content-type "text/css"))))
+      
+      ;; e.g. Bidi
+      (make-handler ["" {"/" {:get :page-handler}
+                         "/css" {"/site.css" {:get :site-css}}}]
+                    
+                    {:page-handler handle-page
+                     :site-css (fn [req]
+                                 (-> (response ...)
+                                     (content-type "text/css")))})))
+#+END_SRC
