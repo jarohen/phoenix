@@ -1,10 +1,15 @@
 (ns phoenix.config
   (:require [phoenix.location :as l]
-            [clojure.walk :refer [postwalk]]
-            [medley.core :as m]
+            [phoenix.jar :as jar]
+            [clojure.java.io :as io]
             [clojure.set :as set]
             [com.stuartsierra.dependency :as deps]
-            [com.stuartsierra.component :as c]))
+            [medley.core :as m]))
+
+(defn assert-config [config-resource]
+  (assert (and config-resource
+               (io/resource config-resource))
+          "Please make sure you have a valid config resource specified at ':phoenix/config' in your 'project.clj'"))
 
 (defn read-string-in-ns [s]
   (binding [*ns* (find-ns 'phoenix.config)]
@@ -16,69 +21,66 @@
       read-string-in-ns
       (dissoc :phoenix/nrepl-port)))
 
-(defn calculate-deps [config]
-  (let [components (set (keys config))
-        sorted-deps (deps/topo-sort (reduce (fn [graph [id {:keys [component component-config]}]]
-                                              (reduce (fn [graph [dep-key dep-value]]
-                                                        (if (and (vector? dep-value)
-                                                                 (= (first dep-value) ::dep))
-                                                          (deps/depend graph id (second dep-value))
-                                                          graph))
-                                                      graph
-                                                      component-config))
-          
-                                            (deps/graph)
-                                            config))
-        
-        ;; these components don't depend on anything or have anything
-        ;; depend on them, but they still need to be in the list
-        island-components (set/difference components (set sorted-deps))]
-    
-    (concat sorted-deps island-components)))
-
 (defn normalise-deps [config]
-  (->> (for [[k v] config]
-         [k {:component (::component v)
-             :component-config (if-not (map? v)
-                                 v
-                                 (->> (for [[config-key config-value] (dissoc v ::component)]
-                                        [config-key (if (= config-value ::dep)
-                                                      [::dep config-key]
-                                                      config-value)])
-                                      (into {})))}])
+  (m/map-vals (fn [component-config]
+                (reduce (fn [acc [k v]]
+                          (cond
+                            (= ::component k) (assoc acc
+                                                :component v)
+              
+                            (= v ::dep) (assoc-in acc [:component-deps k] k)
+              
+                            (and (vector? v)
+                                 (= (first v) ::dep))
+                            (assoc-in acc [:component-deps k] (second v))
+
+                            :otherwise (assoc-in acc [:component-config k] v)))
+
+                        {:component-config {:phoenix/built? jar/built?}}
+                        component-config))
+              config))
+
+(defn calculate-deps [config]
+  (->> (reduce (fn [graph [id {:keys [component component-deps]}]]
+                 (reduce (fn [graph [dep-key dep-value]]
+                           (deps/depend graph id dep-value))
+                         (-> graph
+                             (deps/depend ::system id))
+                         
+                         component-deps))
+               
+               (deps/graph)
+               config)
        
-       (into {})))
+       deps/topo-sort
+       (remove #{::system})))
 
 (defn with-static-config [config sorted-deps]
   (reduce (fn [acc dep-key]
-            (let [{:keys [component component-config]} (get config dep-key)]
+            (let [{:keys [component component-deps component-config]} (get config dep-key)]
               (assoc acc
-                dep-key (if-not (map? component-config)
-                          component-config
-                          
-                          (reduce (fn [component-acc [config-key config-value]]
-                                    (if (and (vector? config-value)
-                                             (= (first config-value) ::dep))
-                                      (let [dependent-key (second config-value)
-                                            {:keys [component static-config]} (get acc dependent-key)]
-                                        (if (nil? component)
-                                          (assoc-in component-acc [:static-config config-key] static-config)
-                                          (update-in component-acc [:component-deps] assoc config-key dependent-key)))
-                                      
-                                      (assoc-in component-acc [:static-config config-key] config-value)))
-                                  
-                                  {:component component}
-                                  
-                                  component-config)))))
+                dep-key (reduce (fn [component-acc [config-key dependent-key]]
+                                  (let [{:keys [component static-config]} (get acc dependent-key)]
+                                    (if (nil? component)
+                                      (assoc-in component-acc [:static-config config-key] static-config)
+                                      (update-in component-acc [:component-deps] assoc config-key dependent-key))))
+                                
+                                {:component-id dep-key
+                                 :component component
+                                 :component-deps component-deps
+                                 :static-config component-config}
+                                
+                                component-deps))))
           {}
           sorted-deps))
 
 (defn read-config [config-resource {:keys [location]}]
   (let [normalised-config (-> (load-config config-resource)
                               (l/combine-config location)
-                              (normalise-deps))]
-    (->> (with-static-config normalised-config (calculate-deps normalised-config))
-         (m/filter-vals :component))))
+                              (normalise-deps))
+        sorted-deps (calculate-deps normalised-config)]
+    (-> (with-static-config normalised-config sorted-deps)
+        (with-meta {:sorted-deps sorted-deps}))))
 
 (comment
   (let [config (-> {:c {::component 'my.ns/function
@@ -95,3 +97,4 @@
                    normalise-deps)
         sorted-deps (calculate-deps config)]
     (with-static-config config sorted-deps)))
+

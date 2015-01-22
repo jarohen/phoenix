@@ -2,18 +2,21 @@
   (:require [medley.core :as m]
             [com.stuartsierra.component :as c]))
 
-(defn make-component [[id {:keys [static-config component]}]]
-  (do
-    (require (symbol (namespace component)))
+(defn make-component [{:keys [component-id static-config component]}]
+  (when component
+    (require (symbol (namespace component))))
 
-    (try
-      [id (eval `(~component ~static-config))]
-      (catch Exception e
-        (throw (ex-info "Failed initialising component"
-                        {:component id
-                         :generator-fn component
-                         :config static-config}
-                        e))))))
+  (try
+    (if component
+      (eval `(~component ~static-config))
+      static-config)
+    
+    (catch Exception e
+      (throw (ex-info "Failed initialising component"
+                      {:component component-id
+                       :generator-fn component
+                       :config static-config}
+                      e)))))
 
 (defn system-deps [system-config]
   (->> system-config
@@ -22,20 +25,10 @@
 
 (defn phoenix-system [system-config]
   (-> (apply c/system-map (->> system-config
-                               (map make-component)
-                               (into {})
+                               (m/map-vals make-component)
+                               seq
                                (apply concat)))
       
       (c/system-using (system-deps system-config))))
 
-(comment
-  '{:db {:phoenix/generator my-app.db/db-component
-         :host ""
-         :port ""}
-
-    :handler {:phoenix/generator my-app.service.handler/handler}
-    
-    :web-server {:phoenix/generator phoenix.http-kit/web-server-component
-                 :handler ::component
-                 }})
 

@@ -12,7 +12,9 @@
   (start [{:keys [handler port aleph-opts] :as this}]
     (log/info "Starting web server on port" port)
     (assoc this
-      :server (http/start-server (request-handler handler)
+      :server (http/start-server (some-fn (request-handler handler)
+                                          (constantly {:status 404
+                                                       :body "Not found"}))
                                  
                                  (merge {:port port}
                                         aleph-opts))))
