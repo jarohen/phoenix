@@ -7,6 +7,7 @@
             [phoenix.system :refer [phoenix-system]]
             [clojure.java.io :as io]
             [clojure.tools.namespace.repl :as tn]
+            [clojure.tools.logging :as log]
             [com.stuartsierra.component :as c]))
 
 (def ^:private config-resource)
@@ -34,7 +35,7 @@
                               (assoc old-location
                                 :current (merge original new-location))))]
 
-    (println "Setting Phoenix location:" (pr-str (:current new-location)))
+    (log/info "Setting Phoenix location:" (pr-str (:current new-location)))
     
     (alter-var-root #'system (constantly (make-system new-location)))
     new-location))
@@ -66,8 +67,6 @@
   
   (alter-var-root #'config-resource (constantly (io/resource phoenix-config))))
 
-(defn- init-nrepl! [{phoenix-config :phoenix/config, :as project}]
-  (config/assert-config phoenix-config)
-  
-  (when-let [nrepl-port (:phoenix/nrepl-port (read-string (slurp (io/resource phoenix-config))))]
+(defn- init-nrepl! [project]
+  (when-let [nrepl-port (:phoenix/nrepl-port (config/read-config config-resource {:location (l/get-location)}))]
     (start-nrepl! nrepl-port project)))

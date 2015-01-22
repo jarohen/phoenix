@@ -60,7 +60,7 @@
                  (conj loaded-resources config-resource)
                  
                  (pm/deep-merge config (dissoc new-config
-                                         :phoenix/includes :phoenix/nrepl-port))))))))
+                                         :phoenix/includes))))))))
 
 (defn normalise-deps [config]
   (m/map-vals (fn [component-config]
