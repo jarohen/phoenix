@@ -1,4 +1,4 @@
-(defproject jarohen/phoenix.modules.aleph "0.1.0-SNAPSHOT"
+(defproject jarohen/phoenix.modules.aleph "0.0.1"
   :description "A module to set up an Aleph component in Phoenix"
   :url "https://github.com/james-henderson/phoenix"
   :license {:name "Eclipse Public License"
