@@ -8,17 +8,17 @@
   :dependencies [[org.clojure/clojure "1.7.0-alpha4"]
 
                  [ring/ring-core "1.3.0"]
-                 [bidi "1.14.0"]
+                 [bidi "1.15.0"]
                  [hiccup "1.0.5"]
                  [garden "1.2.1"]
                  [ring-middleware-format "0.4.0"]
 
-                 [jarohen/phoenix.modules.aleph "0.1.0-SNAPSHOT"]
-                 [jarohen/phoenix.modules.cljs "0.1.0-SNAPSHOT"]
+                 [jarohen/phoenix.modules.aleph "0.0.1"]
+                 [jarohen/phoenix.modules.cljs "0.0.1"]
 
-                 [org.clojure/clojurescript "0.0-2657"]
+                 [org.clojure/clojurescript "0.0-2665"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [jarohen/flow "0.3.0-alpha1"]
+                 [jarohen/flow "0.3.0-alpha3"]
 
                  [org.clojure/tools.logging "0.3.1"]
                  [org.slf4j/slf4j-api "1.7.9"]
@@ -27,16 +27,12 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[jarohen/phoenix "0.1.0-SNAPSHOT"]
-            [jarohen/simple-brepl "0.1.2"]
+  :plugins [[jarohen/phoenix "0.0.1"]
+            [jarohen/simple-brepl "0.2.1"]
             [lein-shell "0.4.0"]]
 
   :phoenix/config "{{name}}-config.edn"
 
-  :aliases {"dev" ["do"
-                   ["shell" "mkdir" "-p"
-                    "target/resources"]
-                   
-                   "phoenix"]
+  :aliases {"dev" "phoenix"
             
             "start" ["trampoline" "phoenix"]})
