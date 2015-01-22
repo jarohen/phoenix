@@ -1,0 +1,130 @@
+* ClojureScript - Phoenix Module
+
+This is a module to automatically re-compile ClojureScript files
+within a Phoenix system, based atop [[https://github.com/thheller/shadow-build][shadow-build]]. It's been adapted
+from Malcolm Sparks's Modular [[https://github.com/juxt/modular/tree/master/modules/cljs/][CLJS module]].
+
+** Getting started
+
+Add this in your 'project.clj', as a dependency:
+
+#+BEGIN_SRC clojure
+  [jarohen/phoenix.modules.cljs "0.0.1"]
+#+END_SRC
+
+In your Phoenix config, add an CLJS compiler component and a
+web-handler component (written by you):
+
+#+BEGIN_SRC clojure
+  {:web-handler {::component myapp.handler/map->WebHandler
+                 :cljs-compiler ::dep}
+
+   :cljs-compiler {::component phoenix.modules.cljs/make-cljs-compiler
+                   :source-path "ui-src"
+
+                   :modules [{:name :main
+                              :mains #{'myapp.ui.app}
+                              :dependencies nil}]
+
+                   ;; JS files will be served under the '/js' context
+                   :web-context-path "/js"
+                   :output-dir "target/cljs/"
+
+                   :externs [...]
+
+                   :dev {:optimizations :none
+                         :pretty-print? true}
+                   
+                   :build {:optimizations :advanced
+                           :pretty-print? false
+                           :classpath-prefix "js"}}}
+#+END_SRC
+
+Shadow-build's 'modules' allow you to split out your CLJS code into
+multiple entry points, by defining 'main' namespaces, so that you
+don't have to serve up all of your CLJS to each page, if you don't
+need to. For more details, please see the [[https://github.com/thheller/shadow-build][shadow-build]] docs.
+
+The CLJS module also expects =:dev= and =:build= configuration
+maps. The =:dev= map is used for normal interactive development - in
+this example, it doesn't use any CLJS optimizations, so that your CLJS
+is re-compiled quickly. 
+
+The =:build= map, on the other hand, is used to pre-compile your CLJS
+when your project is built (uberjar'd). In this case, we can use
+=:advanced= optimization, to minify the compiled JS and speed up
+download times. The =:classpath-prefix=, in this case, is where the
+compiler will put the compiled JS files in the built JAR.
+
+The CLJS compiler also provides a number of functions, that you can
+use in your own handler:
+
+#+BEGIN_SRC clojure
+  (ns myapp.handler
+    (:require [phoenix.modules.cljs :as cljs]))
+
+  ;; Returns a handler that will serve CLJS files as required:
+  (cljs/cljs-handler cljs-compiler)
+
+  ;; Returns a set of bidi routes that can be included in a route data
+  ;; structure:
+  (cljs/bidi-routes cljs-compiler)
+
+  ;; Returns the relative URL of the compiled JS file for the given
+  ;; module, for use in <script src="..." /> tags:
+  (cljs/path-for-module cljs-compiler :main)
+#+END_SRC
+
+Your handler might, therefore, look something like this:
+
+#+BEGIN_SRC clojure
+  (ns myapp.handler
+    (:require [bidi.ring :refer [make-handler]]
+              [compojure.core :refer [routes GET]]
+              [com.stuartsierra.component :as c]
+              [hiccup.page :refer [html5]]
+              [modular.ring :refer [WebRequestHandler]]
+              [phoenix.modules.cljs :as cljs]))
+
+  (defn handle-page [req cljs-compiler]
+    (html5
+     [:head
+      [:title ...]
+
+      [:script {:src (cljs/path-for-module cljs-compiler :main)}]
+      ...]
+
+     [:body
+      ...]))
+
+  (defrecord AppHandler []
+    c/Lifecycle
+    (start [this] this)
+    (stop [this] this)
+
+    WebRequestHandler
+    (request-handler [{:keys [cljs-compiler] :as this}]
+
+      ;; e.g. Compojure
+      (routes
+        (GET "/" {:as req}
+          (handle-page req cljs-compiler))
+
+        (cljs/cljs-handler cljs-compiler))
+      
+      ;; e.g. Bidi
+      (make-handler ["" [{"/" {:get :page-handler}}
+                         (cljs/bidi-routes cljs-compiler)]]
+                    
+                    (some-fn {:page-handler (fn [req]
+                                              (handle-page req cljs-compiler))}
+                             
+                             #(when (fn? %) %)))))
+#+END_SRC
+
+** Licence
+
+Copyright © 2015 James Henderson
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.

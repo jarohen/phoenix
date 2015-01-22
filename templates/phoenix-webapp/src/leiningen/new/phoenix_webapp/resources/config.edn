@@ -1,0 +1,25 @@
+{:phoenix/nrepl-port 7888
+
+ :web-handler {::component {{name}}.service.handler/map->AppHandler
+               :cljs-compiler ::dep}
+
+ :server {::component phoenix.modules.aleph/make-web-server
+          :handler [::dep :web-handler]
+          :port 3000}
+
+ :cljs-compiler {::component phoenix.modules.cljs/make-cljs-compiler
+                 :source-path "ui-src"
+
+                 :modules [{:name :main
+                            :mains #{'{{name}}.ui.app}
+                            :dependencies nil}]
+
+                 :web-context-path "/js"
+                 :output-dir "target/cljs/"
+
+                 :dev {:optimizations :none
+                       :pretty-print? true}
+                 
+                 :build {:optimizations :advanced
+                         :pretty-print? false
+                         :classpath-prefix "js"}}}

@@ -1,0 +1,402 @@
+* Phoenix
+
+Phoenix is a library that helps with simple configuration for
+Component-based systems, based on (and hopefully superceding)
+[[https://github.com/james-henderson/nomad][Nomad]] and [[https://github.com/james-henderson/frodo][Frodo]].
+
+If you've written a traditional Component-based system, you've
+probably experienced having to create a plethora of 'system.clj',
+'dev.clj', 'user.clj' etc type namespaces in order to wire-up the
+system, set up configuration-based switches, and duplicate the code to
+start/stop/reload the system.
+
+Phoenix removes the need for all of this, replacing it with one (or
+more, if you choose) EDN declaration of how your system should be
+wired up.
+
+It also (optionally) includes a number of common Components to get you
+started - a ClojureScript compiler component, as well as components
+for [[http://www.http-kit.org/][http-kit]] and [[https://github.com/ztellman/aleph][Aleph]]. After that, it composes well with any
+'Lifecycle' components that you (or anyone else) may have already
+written.
+
+** Getting started:
+
+*** 'Just get me up and running already!'
+
+For an 'all-batteries-included' project, try the 'phoenix-webapp'
+Leiningen template:
+
+#+BEGIN_SRC sh
+  lein new phoenix-webapp <your-project>
+  cd <your-project>
+  lein dev
+#+END_SRC
+
+This will start an nREPL server on port 7888, start a web server on
+port 3000, and automatically re-compile your ClojureScript files if
+they change. 
+
+When it starts, head to [[http://localhost:3000]] for further
+instructions.
+
+*** 'But I already have a project...'
+
+No worries, I understand :)
+
+First, include Phoenix as a plugin in your 'project.clj':
+
+#+BEGIN_SRC clojure
+  {:plugins [jarohen/phoenix "0.0.1"]}
+#+END_SRC
+
+Next, make a small config file on your classpath - let's say, in the
+'resources' directory, at 'config/myapp-config.edn':
+
+#+BEGIN_SRC clojure
+  {:phoenix/nrepl-port 7888}
+#+END_SRC
+
+Then, tell Phoenix where to find your main config file by putting a
+=:phoenix/config-resource= key in your 'project.clj':
+
+#+BEGIN_SRC clojure
+  {:phoenix/config-resource "config/myapp-config.edn"}
+#+END_SRC
+
+Now, if you run =lein phoenix=, you should see the nREPL server
+open. Normally, at this point, Phoenix would also start your system,
+as and when you declare one in your config file.
+
+** Reloading the system
+
+Just as real-life Phoenixes die and are re-born from the ashes, so too
+does this Phoenix. At your REPL, you have a choice of three Phoenix
+commands, with fairly self-explanatory behaviour:
+
+#+BEGIN_SRC clojure
+  (phoenix/reload!)
+
+  ;; or, explicitly:
+
+  (phoenix/stop!)
+  (phoenix/start!)
+#+END_SRC
+
+When you reload a Phoenix system (or explicitly stop and start it, in
+fact), the following steps happen:
+
+- The currently running system is gracefully stopped (if it's running)
+- Any namespaces that have changed on disk are reloaded
+- The configuration file is re-read
+- The system is re-started
+
+For more details about how the system is reloaded, and how to
+architect your application accordingly, I'd recommend reading Stuart
+Sierra's excellent [[http://thinkrelevance.com/blog/2013/06/04/clojure-workflow-reloaded]['My Clojure Workflow, Reloaded']] blog.
+
+** Configuring components:
+
+The system we've just created doesn't have any components yet (unless
+you used the template, of course!) - let's add some:
+
+*** Adding components:
+
+Let's say we've written a component that makes a database connection
+pool:
+
+#+BEGIN_SRC clojure
+  (ns myapp.database
+    (:require [com.stuartsierra.component :as c]))
+
+  (defprotocol DatabasePool
+    (db-conn [_]
+      "Returns a JDBC connection, suitable for passing to
+      clojure.java.jdbc/query et al"))
+
+  ;; make-pool! and stop-pool! left as exercises to the reader
+
+  (defn make-pool! [opts]
+    {:a-dummy :pool})
+
+  (defn stop-pool! [pool]
+    (println "Stopping pool!"))
+
+  (defrecord PoolComponent []
+    c/Lifecycle
+    (start [{:keys [host user pass port database]}]
+      (println "Starting DB pool...")
+      (assoc this
+        ::pool (make-pool! {...})))
+
+    (stop [{:keys [::pool] :as this}]
+      (println "Stopping DB pool...")
+      (dissoc this ::pool))
+
+    DatabasePool
+    (db-conn [{:keys [::pool] :as this}]
+      pool))
+
+  (defn make-database-pool [{:keys [host user pass port database] :as opts}]
+    (map->PoolComponent opts))
+#+END_SRC
+
+(I'll come back to why we've created a =DatabasePool= protocol later,
+when we come to use it)
+
+We can add this as a component of our Phoenix system by creating an
+entry in the config map:
+
+#+BEGIN_SRC clojure
+  {:phoenix/nrepl-port 7888
+
+   :database {::component myapp.database/make-database-pool
+              :host "db-host"
+              :port 5432
+              ...}}
+#+END_SRC
+
+The =::component= entry in the =:database= map lets Phoenix know that
+this is a Component that needs to be started, by calling the provided
+function. Phoenix passes the remainder of the =:database= map to that
+function, so any configuration that the component needs can be stored
+here.
+
+Let's reload the system, and see the component started! 
+
+#+BEGIN_SRC clojure
+  (phoenix/reload!)
+#+END_SRC
+
+The currently running Phoenix system is always available at
+=phoenix/system=, so you can use this to see what's been created:
+
+#+BEGIN_SRC clojure
+  (:database phoenix/system)
+#+END_SRC
+
+N.B =phoenix/system= is intended for debugging/REPL use only -
+fundamentally, it's a global variable, so it's best not to rely on it
+in live code! Phoenix has other, more composable ways of linking
+Components.
+
+*** Adding dependencies between Components:
+
+Having created our database pool, we'd now like to use it in the rest
+of our application.
+
+We do this by registering a =::dep= in the configuration map:
+
+#+BEGIN_SRC clojure
+  {:phoenix/nrepl-port 7888
+
+   :database {::component myapp.database/make-database-pool
+              :host "db-host"
+              :port 5432
+              ...}
+
+   :my-foo {::component myapp.foo/map->FooComponent
+            :database ::dep
+            ...}}
+#+END_SRC
+
+The database will then be provided to the Foo component in the
+Component's =start= function:
+
+#+BEGIN_SRC clojure
+  (ns myapp.foo
+    (:require [myapp.database :as db]
+              [clojure.java.jdbc :as jdbc]
+              [com.stuartsierra.component :as c]))
+
+  (defrecord FooComponent []
+    c/Lifecycle
+    (start [{:keys [database]}]
+      (prn "Here's all our users:"
+           (jdbc/query (db/db-conn database)
+                       ["SELECT * FROM users"])))
+
+    (stop [this]
+      ;; ...
+      ))
+#+END_SRC
+
+Here, we're using the =db-conn= protocol function to get access to the
+database connection - while we could access it directly within the
+record, it's probably better to have a layer of indirection between
+them. This way, you can test the =FooComponent= in isolation by
+passing it a mocked out instance of =DatabasePool=.
+
+I haven't bothered creating a =make-foo-component= in this case -
+Clojure automatically creates a =map->RecordName= function for all
+records, which happens to have the same signature. In fact, if you
+don't have to process the config map before passing it to the
+Component, I'd recommend you do the same!
+
+*** Dependency aliases:
+
+We don't necessarily need to have the same name for the dependent key
+and the dependency - if we chose instead to call the database
+component ':postgres', for example, we could alias it in ':my-foo' as
+follows:
+
+#+BEGIN_SRC clojure
+  {:phoenix/nrepl-port 7888
+
+   :postgres {::component myapp.database/make-database-pool
+              :host "db-host"
+              :port 5432
+              ...}
+
+   :my-foo {::component myapp.foo/map->FooComponent
+            :database [::dep :postgres]
+            ...}}
+#+END_SRC
+
+As far as the Foo component is concerned, it can still refer to it's
+database dependency under the ':database' key.
+
+*** Location-aware configuration:
+
+Phoenix (like it's predecessor, Nomad) allows you to specify different
+configuration, depending on where the system is running. You can
+switch on:
+
+- Hostname
+- Hostname/User
+- 'Environment' - start Phoenix with either: a 'PHOENIX_ENV=...'
+  environment variable, or a '-Dphoenix.env=...' Java system property
+
+Location-specific should be included in the config under various
+':phoenix/...' keys, as follows:
+
+#+BEGIN_SRC clojure
+  {:database {:host "dev-db.mycompany.com"
+              :port 5432
+              :user "devapp"
+              :pass "..."}
+
+   :phoenix/hosts {"daves-laptop"
+                   {:database {:host "localhost"
+                               :port 13152
+                               :user "dave"
+                               :pass "..."}}
+
+                   "test-box.mycompany.com"
+                   {:database {...}
+
+                    :phoenix/users {"user-a" {:database {...}}
+                                    "user-b" {...}}}}
+
+   :phoenix/environments {"stg"
+                          {:database {:host "stg-db.mycompany.com"
+                                      ...}}
+
+                          "prod"
+                          {:database {:host "prod-db.mycompany.com"
+                                      ...}}}}
+
+#+END_SRC
+
+Configuration from the various locations is deep-merged - i.e. if you
+only specify the database username/password in a particular
+environment, then the username/password will be overridden in that
+environment, but the host will fall back to the main declaration.
+
+The order of preference (in decreasing order) is: environment,
+host+user, host, general.
+
+You can also override the 'current location' - e.g. to test the
+configuration values of other environments. When the system's stopped:
+
+#+BEGIN_SRC clojure
+  (phoenix/stop!)
+
+  (phoenix/set-location! {:environment "stg"
+                          :hostname "dev-machine"
+                          :user "james"})
+
+  (phoenix/start!)
+#+END_SRC
+
+You can include/exclude entries from that location map, as required.
+
+You can also pass the location map as an argument to 'reload':
+
+#+BEGIN_SRC clojure
+  (phoenix/reload! {:environment "stg"})
+#+END_SRC
+
+
+*** Referencing other config files:
+
+You might have some configuration values that you don't want to check
+into version control - passwords, or API keys, for example.
+
+You can add a =:phoenix/includes= key into your configuration, which
+is expected to be a vector of external files. Phoenix provides two
+reader macros for this: =#phoenix/file= and =#phoenix/resource=, which
+can be used as follows:
+
+#+BEGIN_SRC clojure
+  ;; myapp-config.edn
+
+  {:phoenix/includes [#phoenix/file "~/.myapp/passwords.edn"]
+   
+   :database {:host "..." 
+              :user "..."
+              ...}}
+
+  ;; ~/.myapp/passwords.edn
+
+  {:database {:pass "..."}
+   ...}
+#+END_SRC
+
+The configuration in included files is deep-merged into the main map,
+with the included value taking preference if both specify the same
+key.
+
+Includes can also be specified in the environment, host or user maps -
+for files that should only be included in a given location.
+
+(You can use these reader macros throughout the rest of your config as
+well!)
+
+** Building Phoenix-based projects
+
+You can build Phoenix-based projects by running:
+
+#+BEGIN_SRC sh
+  lein phoenix uberjar
+#+END_SRC
+
+This creates an executable JAR file, which can then be run with:
+
+#+BEGIN_SRC sh
+  # Replace this with the actual path to the uberjar
+  java -jar target/myapp-standalone.jar
+#+END_SRC
+
+** 'Built-in' components
+
+Phoenix has a number of optional 'built-in' components, each with
+their own documentation:
+
+- [[https://github.com/james-henderson/phoenix/tree/master/modules/cljs][ClojureScript]] 
+- [[https://github.com/james-henderson/phoenix/tree/master/modules/aleph][Aleph]] (web server)
+- [[https://github.com/james-henderson/phoenix/tree/master/modules/http-kit][http-kit]] (web-server)
+
+** Questions/Suggestions/Bugs/Features/PRs?
+
+Yes please! Feel free to get in touch, either through GitHub, Twitter
+([[https://twitter.com/jarohen][@jarohen]]) or e-mail (on my profile).
+
+Cheers!
+
+** Licence
+
+Copyright © 2015 James Henderson
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
