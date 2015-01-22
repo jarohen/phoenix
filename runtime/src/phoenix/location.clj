@@ -5,10 +5,12 @@
             [clojure.string :as s]))
 
 (defn get-location []
-  {:environment (get (System/getenv) "PHOENIX_ENV")
+  {:environment (or (get (System/getenv) "PHOENIX_ENV")
+                    (System/getProperty "phoenix.env"))
 
    ;; not sure how I plan to make this work on Windoze... Will see if
-   ;; someone complains first, I suspect.
+   ;; someone complains first, I suspect. If you do see this, I'm
+   ;; generally quite quick at merging PRs ;)
    :host (s/trim (:out (sh "hostname")))
    
    :user (System/getProperty "user.name")})
