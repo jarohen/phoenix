@@ -5,10 +5,12 @@
             [clojure.string :as s]))
 
 (defn get-location []
-  {:environment (get (System/getenv) "PHOENIX_ENV")
+  {:environment (or (get (System/getenv) "PHOENIX_ENV")
+                    (System/getProperty "phoenix.env"))
 
    ;; not sure how I plan to make this work on Windoze... Will see if
-   ;; someone complains first, I suspect.
+   ;; someone complains first, I suspect. If you do see this, I'm
+   ;; generally quite quick at merging PRs ;)
    :host (s/trim (:out (sh "hostname")))
    
    :user (System/getProperty "user.name")})
@@ -27,7 +29,12 @@
   (deep-merge general
               (get hosts host)
               (get hosts-users [host user])
-              (get environments environment)))
+              (get environments environment)
+              
+              {:phoenix/includes (concat (:phoenix/includes general)
+                                         (get-in hosts [host :phoenix/includes])
+                                         (get-in hosts-users [[host user] :phoenix/includes])
+                                         (get-in environments [[environment] :phoenix/includes]))}))
 
 (defn combine-config [config location]
   (-> config
