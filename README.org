@@ -306,6 +306,28 @@ environment, but the host will fall back to the main declaration.
 The order of preference (in decreasing order) is: environment,
 host+user, host, general.
 
+You can also override the 'current location' - e.g. to test the
+configuration values of other environments. When the system's stopped:
+
+#+BEGIN_SRC clojure
+  (phoenix/stop!)
+
+  (phoenix/set-location! {:environment "stg"
+                          :hostname "dev-machine"
+                          :user "james"})
+
+  (phoenix/start!)
+#+END_SRC
+
+You can include/exclude entries from that location map, as required.
+
+You can also pass the location map as an argument to 'reload':
+
+#+BEGIN_SRC clojure
+  (phoenix/reload! {:environment "stg"})
+#+END_SRC
+
+
 *** Referencing other config files:
 
 You might have some configuration values that you don't want to check
