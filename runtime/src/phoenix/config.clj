@@ -5,7 +5,6 @@
             [clojure.java.io :as io]
             [clojure.set :as set]
             [clojure.string :as s]
-            [clojure.tools.reader.edn :as edn]
             [clojure.tools.logging :as log]
             [com.stuartsierra.dependency :as deps]
             [medley.core :as m]))
@@ -22,8 +21,10 @@
                                                {:resource %})))})
 
 (defn parse-config [s]
-  (binding [*ns* (find-ns 'phoenix.config)]
-    (edn/read-string {:readers phoenix-readers} s)))
+  (binding [*ns* (find-ns 'phoenix.config)
+            *data-readers* (some-fn phoenix-readers
+                                    *data-readers*)]
+    (read-string s)))
 
 (defn try-slurp [slurpable]
   (try
@@ -41,8 +42,6 @@
          loaded-resources #{}
          config {}]
 
-    (prn config-resources)
-    
     (if (empty? config-resources)
       config
 
