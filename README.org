@@ -363,6 +363,28 @@ for files that should only be included in a given location.
 (You can use these reader macros throughout the rest of your config as
 well!)
 
+*** Config in environment variables:
+
+Configuration keys can also reference environment variables, using
+either =[::env :env-var-name]= or
+=[::env-edn :env-var-name]=. Environment variable names are
+automatically converted to 'UPPER_SNAKE_CASE'. The difference between
+=::env= and =::env-edn= is that environment variables referenced with
+=::env-edn= are parsed as EDN before being passed to your application.
+
+To provide a default, in case the environment variable isn't
+specified, include it with the vector: =[::env :my-env-var "default"]=
+
+#+BEGIN_SRC clojure
+  {:my-component {:port 3000
+                  :username [::env :myapp-user "admin"]
+                  :password [::env :myapp-password "password-123"]}}
+#+END_SRC
+
+#+BEGIN_SRC sh
+  MYAPP_USER=another-user MYAPP_PASSWORD=pr0dp455w0rd lein phoenix
+#+END_SRC
+
 ** Building Phoenix-based projects
 
 You can build Phoenix-based projects by running:
