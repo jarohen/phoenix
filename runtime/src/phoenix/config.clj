@@ -7,6 +7,7 @@
             [clojure.string :as s]
             [clojure.tools.logging :as log]
             [com.stuartsierra.dependency :as deps]
+            [camel-snake-kebab.core :as csk]
             [medley.core :as m]))
 
 (defn assert-config [config-resource]
@@ -61,6 +62,21 @@
                  (pm/deep-merge config (dissoc new-config
                                          :phoenix/includes))))))))
 
+(defn read-env-var [{:keys [type var-name default]}]
+  (letfn [(try-read-string [s]
+            (try
+              (when s
+                (read-string s))
+              (catch Exception e
+                (throw (ex-info "Phoenix: failed reading env-var"
+                                {:env-var var-name
+                                 :value s})))))]
+    (let [parse-fn (case type
+                     ::env-edn try-read-string
+                     ::env identity)]
+      (or (parse-fn (System/getenv (csk/->SNAKE_CASE_STRING var-name)))
+          default))))
+
 (defn normalise-deps [config]
   (m/map-vals (fn [component-config]
                 (if-not (map? component-config)
@@ -72,10 +88,14 @@
                                                   :component v)
               
                               (= v ::dep) (assoc-in acc [:component-deps k] k)
-              
+
                               (and (vector? v)
                                    (= (first v) ::dep))
                               (assoc-in acc [:component-deps k] (second v))
+
+                              (and (vector? v)
+                                   (contains? #{::env ::env-edn} (first v)))
+                              (assoc-in acc [:component-config k] (read-env-var (zipmap [:type :var-name :default] v)))
 
                               :otherwise (assoc-in acc [:component-config k] v)))
 
@@ -143,7 +163,8 @@
                          :a [::dep :map-a]}
               
                     :map-a {:a 1
-                            :b 2}}
+                            :b 2
+                            :c [::env :lein-home]}}
 
                    normalise-deps)
         sorted-deps (calculate-deps config)]
