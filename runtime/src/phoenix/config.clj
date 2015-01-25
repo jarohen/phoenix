@@ -18,20 +18,24 @@
 (def phoenix-readers
   {'phoenix/file (comp io/file #(s/replace % #"^~" (System/getProperty "user.home")))
    'phoenix/resource (some-fn io/resource
-                              #(throw (ex-info "Phoenix: can't find resource"
-                                               {:resource %})))})
+                              
+                              (fn [path]
+                                (log/warn "Can't read config-file:" path)
+                                ::invalid-include))})
 
 (defn parse-config [s]
   (binding [*ns* (find-ns 'phoenix.config)
-            *data-readers* (some-fn phoenix-readers
-                                    *data-readers*)]
-    (read-string s)))
+            *data-readers* (merge *data-readers* phoenix-readers)]
+    (when (string? s)
+      (read-string s))))
 
 (defn try-slurp [slurpable]
   (try
     (slurp slurpable)
+    
     (catch Exception e
-      (log/warn "Can't find config:" slurpable))))
+      (log/warn "Can't read config-file:" slurpable)
+      ::invalid-include)))
 
 (defn ->seq [el-or-coll]
   (if (coll? el-or-coll)
@@ -55,7 +59,8 @@
 
           (recur (concat more-resources (->> (:phoenix/includes new-config)
                                              ->seq
-                                             (remove #(contains? loaded-resources %))))
+                                             (remove #(contains? loaded-resources %))
+                                             (remove #{::invalid-include})))
                  
                  (conj loaded-resources config-resource)
                  
