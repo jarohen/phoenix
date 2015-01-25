@@ -7,6 +7,7 @@
             [clojure.string :as s]
             [clojure.tools.logging :as log]
             [com.stuartsierra.dependency :as deps]
+            [camel-snake-kebab.core :as csk]
             [medley.core :as m]))
 
 (defn assert-config [config-resource]
@@ -17,20 +18,24 @@
 (def phoenix-readers
   {'phoenix/file (comp io/file #(s/replace % #"^~" (System/getProperty "user.home")))
    'phoenix/resource (some-fn io/resource
-                              #(throw (ex-info "Phoenix: can't find resource"
-                                               {:resource %})))})
+                              
+                              (fn [path]
+                                (log/warn "Can't read config-file:" path)
+                                ::invalid-include))})
 
 (defn parse-config [s]
   (binding [*ns* (find-ns 'phoenix.config)
-            *data-readers* (some-fn phoenix-readers
-                                    *data-readers*)]
-    (read-string s)))
+            *data-readers* (merge *data-readers* phoenix-readers)]
+    (when (string? s)
+      (read-string s))))
 
 (defn try-slurp [slurpable]
   (try
     (slurp slurpable)
+    
     (catch Exception e
-      (log/warn "Can't find config:" slurpable))))
+      (log/warn "Can't read config-file:" slurpable)
+      ::invalid-include)))
 
 (defn ->seq [el-or-coll]
   (if (coll? el-or-coll)
@@ -54,12 +59,28 @@
 
           (recur (concat more-resources (->> (:phoenix/includes new-config)
                                              ->seq
-                                             (remove #(contains? loaded-resources %))))
+                                             (remove #(contains? loaded-resources %))
+                                             (remove #{::invalid-include})))
                  
                  (conj loaded-resources config-resource)
                  
                  (pm/deep-merge config (dissoc new-config
                                          :phoenix/includes))))))))
+
+(defn read-env-var [{:keys [type var-name default]}]
+  (letfn [(try-read-string [s]
+            (try
+              (when s
+                (read-string s))
+              (catch Exception e
+                (throw (ex-info "Phoenix: failed reading env-var"
+                                {:env-var var-name
+                                 :value s})))))]
+    (let [parse-fn (case type
+                     ::env-edn try-read-string
+                     ::env identity)]
+      (or (parse-fn (System/getenv (csk/->SNAKE_CASE_STRING var-name)))
+          default))))
 
 (defn normalise-deps [config]
   (m/map-vals (fn [component-config]
@@ -72,10 +93,14 @@
                                                   :component v)
               
                               (= v ::dep) (assoc-in acc [:component-deps k] k)
-              
+
                               (and (vector? v)
                                    (= (first v) ::dep))
                               (assoc-in acc [:component-deps k] (second v))
+
+                              (and (vector? v)
+                                   (contains? #{::env ::env-edn} (first v)))
+                              (assoc-in acc [:component-config k] (read-env-var (zipmap [:type :var-name :default] v)))
 
                               :otherwise (assoc-in acc [:component-config k] v)))
 
@@ -143,7 +168,8 @@
                          :a [::dep :map-a]}
               
                     :map-a {:a 1
-                            :b 2}}
+                            :b 2
+                            :c [::env :lein-home]}}
 
                    normalise-deps)
         sorted-deps (calculate-deps config)]

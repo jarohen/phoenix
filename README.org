@@ -47,7 +47,7 @@ No worries, I understand :)
 First, include Phoenix as a plugin in your 'project.clj':
 
 #+BEGIN_SRC clojure
-  {:plugins [jarohen/phoenix "0.0.1"]}
+  {:plugins [jarohen/phoenix "0.0.2"]}
 #+END_SRC
 
 Next, make a small config file on your classpath - let's say, in the
@@ -67,6 +67,26 @@ Then, tell Phoenix where to find your main config file by putting a
 Now, if you run =lein phoenix=, you should see the nREPL server
 open. Normally, at this point, Phoenix would also start your system,
 as and when you declare one in your config file.
+
+*** Using Phoenix without Leiningen
+
+You'll need to add the Phoenix runtime to your dependencies:
+
+#+BEGIN_SRC clojure
+  [jarohen/phoenix.runtime "0.0.2"]
+#+END_SRC
+
+Then, from a REPL, run
+
+#+BEGIN_SRC clojure
+  (require 'phoenix
+           '[clojure.java.io :as io])
+
+  (phoenix/init-phoenix! (io/resource "config-file.edn"))
+
+#+END_SRC
+
+After that, Phoenix should behave as documented below.
 
 ** Reloading the system
 
@@ -362,6 +382,28 @@ for files that should only be included in a given location.
 
 (You can use these reader macros throughout the rest of your config as
 well!)
+
+*** Config in environment variables:
+
+Configuration keys can also reference environment variables, using
+either =[::env :env-var-name]= or
+=[::env-edn :env-var-name]=. Environment variable names are
+automatically converted to 'UPPER_SNAKE_CASE'. The difference between
+=::env= and =::env-edn= is that environment variables referenced with
+=::env-edn= are parsed as EDN before being passed to your application.
+
+To provide a default, in case the environment variable isn't
+specified, include it with the vector: =[::env :my-env-var "default"]=
+
+#+BEGIN_SRC clojure
+  {:my-component {:port 3000
+                  :username [::env :myapp-user "admin"]
+                  :password [::env :myapp-password "password-123"]}}
+#+END_SRC
+
+#+BEGIN_SRC sh
+  MYAPP_USER=another-user MYAPP_PASSWORD=pr0dp455w0rd lein phoenix
+#+END_SRC
 
 ** Building Phoenix-based projects
 

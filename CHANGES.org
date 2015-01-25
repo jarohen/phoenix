@@ -1,0 +1,21 @@
+* Changelog
+** 0.0.x
+*** 0.0.2
+
+Added ability to refer to configuration values in environment
+variables. Thanks to [[https://github.com/glenjamin][Glen Mailer]] for the suggestion!
+
+Made Phoenix accessible to people who don't use Leiningen by making
+=(phoenix/init-phoenix!)= public. It now accepts something that can be
+slurped (i.e. either =(io/file ...)= or =(io/resource ...)=), rather
+than a path to a resource. Thanks to [[https://github.com/piranha][Alexander Solovyov]] for the
+suggestion!
+
+Fixed a bug with the config-file includes that didn't behave as
+expected when config files were missing. Again, thanks to [[https://github.com/piranha][Alexander
+Solovyov]] for letting me know!
+
+*** 0.0.1
+
+Initial release. Thanks to [[https://github.com/lsnape][Luke Snape]] and [[https://github.com/malcolmsparks][Malcolm Sparks]] for all of
+their help and feedback!
