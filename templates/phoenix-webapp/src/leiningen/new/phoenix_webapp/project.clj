@@ -27,7 +27,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[jarohen/phoenix "0.0.1"]
+  :plugins [[jarohen/phoenix "0.0.2"]
             [jarohen/simple-brepl "0.2.1"]
             [lein-shell "0.4.0"]]
 
