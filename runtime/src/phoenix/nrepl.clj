@@ -13,7 +13,7 @@
          (map resolve-middleware nrepl-middleware)))
 
 (defn start-nrepl! [nrepl-port & [{:keys [repl-options target-path root]} :as project]]
-  (when target-path
+  (when (and target-path root)
     (doseq [port-file [(io/file target-path "repl-port")
                        (io/file root ".nrepl-port")]]
       (doto port-file

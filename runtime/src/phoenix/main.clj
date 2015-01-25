@@ -18,8 +18,8 @@
 
     (alter-var-root #'phoenix.jar/built? (constantly true))
     
-    (#'phoenix/init-phoenix! project)
+    (phoenix/init-phoenix! (io/resource (phoenix-config-location)))
 
-    (#'phoenix/init-nrepl! project)
+    (phoenix/init-nrepl! project)
 
     (#'phoenix/do-start!)))

@@ -58,16 +58,18 @@
 (defn reload! [& [{:keys [environment host user] :as new-location}]]
   (when @!started?
     (stop!))
+
   (when new-location
     (set-location! new-location))
+  
   (start!))
 
-(defn- init-phoenix! [{phoenix-config :phoenix/config, :as project}]
-  (config/assert-config phoenix-config)
+(defn init-phoenix! [config-resource]
+  (assert config-resource "Please specify a valid config resource")
   
-  (alter-var-root #'config-resource (constantly (io/resource phoenix-config))))
+  (alter-var-root #'phoenix/config-resource (constantly config-resource)))
 
-(defn- init-nrepl! [project]
+(defn init-nrepl! [{:keys [repl-options target-port root] :as project}]
   (when-let [nrepl-port (get-in (config/read-config config-resource {:location (l/get-location)})
                                 [:phoenix/nrepl-port :static-config])]
     (start-nrepl! nrepl-port project)))
