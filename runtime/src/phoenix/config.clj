@@ -23,8 +23,7 @@
 
 (defn parse-config [s]
   (binding [*ns* (find-ns 'phoenix.config)
-            *data-readers* (some-fn phoenix-readers
-                                    *data-readers*)]
+            *data-readers* (merge *data-readers* phoenix-readers)]
     (read-string s)))
 
 (defn try-slurp [slurpable]
