@@ -19,5 +19,5 @@
       (update-in [:injections]
                  concat
                  `[(require '~'phoenix)
-                   (#'phoenix/init-phoenix! (quote ~(select-project-keys project)))])))
+                   (phoenix/init-phoenix! (clojure.java.io/resource ~(:phoenix/config project)))])))
 
