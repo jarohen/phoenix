@@ -1,5 +1,12 @@
 * Changelog
 ** 0.0.x
+*** 0.0.3
+
+Couple of minor bugfixes:
+
+- We no longer run any tests whenever the system is reloaded.
+- Small bugfix in uberjar - config values aren't always maps
+
 *** 0.0.2
 
 Added ability to refer to configuration values in environment

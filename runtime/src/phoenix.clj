@@ -49,7 +49,9 @@
 
 (defn start! []
   (assert (false? @!started?) "System already started!")
-  (tn/refresh :after 'phoenix/do-start!))
+  
+  (binding [clojure.test/*load-tests* false]
+    (tn/refresh :after 'phoenix/do-start!)))
 
 (defn stop! []
   (alter-var-root #'system c/stop-system)
