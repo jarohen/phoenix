@@ -12,9 +12,15 @@
     "Builds any necessary artifacts, and returns a pair of the updated
     component and the updated project map"))
 
+(defn merge-deps [m1 m2]
+  (if (and (map? m1)
+           (map? m2))
+    (merge m1 m2)
+    m2))
+
 (defn- populate-deps [system {:keys [component-id component-deps]}]
   (let [built-deps (m/map-vals #(get system %) (or component-deps {}))]
-    (update-in system [component-id] merge built-deps)))
+    (update-in system [component-id] merge-deps built-deps)))
 
 (defn- build-component [{:keys [system project] :as acc} component-id]
   (let [component (get system component-id)]
