@@ -1,5 +1,22 @@
 * Changelog
 ** 0.0.x
+*** 0.0.4
+
+Breaking changes - moving to be more compliant with the EDN spec, so
+removing namespace-qualified keywords (e.g. =::dep=). These have all
+been replaced with (for example) =:phoenix/dep=.
+
+A search replace like =s|::|:phoenix/|g= on your config file should be
+sufficient.
+
+Also, symbols in configuration are now automatically quoted, so
+explicit quotes should be removed. This is particularly the case for
+the CLJS module, where =:mains #{'yourapp.ui.app}= should be replaced
+with =:mains #{yourapp.ui.app}=.
+
+Thanks to everyone getting involved in the discussion on the Clojure
+mailing list for their suggestions!
+
 *** 0.0.3
 
 Couple of minor bugfixes:

@@ -23,7 +23,12 @@ web-handler component (written by you):
                    :source-path "ui-src"
 
                    :modules [{:name :main
+
+                              ;; Phoenix >= 0.0.4
+                              :mains #{myapp.ui.app}
+                              ;; Phoenix < 0.0.4
                               :mains #{'myapp.ui.app}
+
                               :dependencies nil}]
 
                    ;; JS files will be served under the '/js' context

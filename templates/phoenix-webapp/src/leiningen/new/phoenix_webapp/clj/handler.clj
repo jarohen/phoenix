@@ -54,7 +54,7 @@
   (stop [this] this)
 
   WebRequestHandler
-  (request-handler [{:keys [db cljs-compiler]}]
+  (request-handler [{:keys [cljs-compiler]}]
     (make-handler ["" [site-routes
                        api-routes
                        
