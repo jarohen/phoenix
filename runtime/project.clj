@@ -12,6 +12,7 @@
                  [org.clojure/tools.namespace "0.2.7"]
                  [org.clojure/tools.nrepl "0.2.6"]
                  [org.clojure/tools.logging "0.3.1"]
+                 [org.clojure/tools.reader "0.8.13"]
 
                  [camel-snake-kebab "0.2.4"]
                  
