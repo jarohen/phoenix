@@ -8,6 +8,7 @@
             [clojure.tools.logging :as log]
             [com.stuartsierra.dependency :as deps]
             [camel-snake-kebab.core :as csk]
+            [clojure.tools.reader.edn :as edn]
             [medley.core :as m]))
 
 (defn assert-config [config-resource]
@@ -24,10 +25,9 @@
                                 ::invalid-include))})
 
 (defn parse-config [s]
-  (binding [*ns* (find-ns 'phoenix.config)
-            *data-readers* (merge *data-readers* phoenix-readers)]
-    (when (string? s)
-      (read-string s))))
+  (when (string? s)
+    (edn/read-string {:readers phoenix-readers}
+                     s)))
 
 (defn try-slurp [slurpable]
   (try
@@ -67,42 +67,61 @@
                  (pm/deep-merge config (dissoc new-config
                                          :phoenix/includes))))))))
 
-(defn read-env-var [{:keys [type var-name default]}]
+(defmulti process-config-pair
+  (fn [config acc k v]
+    (or (#{:phoenix/component} k)
+        (#{:phoenix/dep} v)
+
+        (and (vector? v)
+             (let [[fst & more] v]
+               (when (and (keyword? fst)
+                          (= (namespace fst) "phoenix"))
+                 fst))))))
+
+(defmethod process-config-pair :phoenix/component [_ acc _ v]
+  (assoc acc :component v))
+
+(defmethod process-config-pair :phoenix/dep [_ acc k v]
+  (let [referred-component (or (when (= v :phoenix/dep)
+                                       k)
+                                     (when (vector? v)
+                                       (second v)))]
+    
+    (assoc-in acc [:component-deps k] referred-component)))
+
+(defn read-env-var [var-name]
+  (System/getenv (csk/->SNAKE_CASE_STRING var-name)))
+
+(defmethod process-config-pair :phoenix/env-var [_ acc k [_ var-name default]]
+  (assoc-in acc [:component-config k] (or (read-env-var var-name) default)))
+
+(defmethod process-config-pair :phoenix/edn-env-var [_ acc k [_ var-name default]]
   (letfn [(try-read-string [s]
             (try
               (when s
-                (read-string s))
+                (edn/read-string s))
               (catch Exception e
                 (throw (ex-info "Phoenix: failed reading env-var"
                                 {:env-var var-name
                                  :value s})))))]
-    (let [parse-fn (case type
-                     ::env-edn try-read-string
-                     ::env identity)]
-      (or (parse-fn (System/getenv (csk/->SNAKE_CASE_STRING var-name)))
-          default))))
+    (assoc-in acc [:component-config k] (or (try-read-string (read-env-var var-name)) default))))
 
-(defn normalise-deps [config]
+(defmethod process-config-pair :phoenix/secret [{:keys [:phoenix/secret-keys]} acc k [_ secret-key-name [cypher-text iv]]]
+  (let [secret-key (get secret-keys secret-key-name)]
+    (assert secret-key (format "Phoenix: can't find secret key '%s'" secret-key-name))
+    
+    (assoc-in acc [:component-config k] (ps/decrypt [cypher-text iv] (get secret-keys secret-key-name)))))
+
+(defmethod process-config-pair :default [_ acc k v]
+  (assoc-in acc [:component-config k] v))
+
+(defn process-config [config]
   (m/map-vals (fn [component-config]
                 (if-not (map? component-config)
                   {:component-config component-config}
                   
                   (reduce (fn [acc [k v]]
-                            (cond
-                              (= ::component k) (assoc acc
-                                                  :component v)
-              
-                              (= v ::dep) (assoc-in acc [:component-deps k] k)
-
-                              (and (vector? v)
-                                   (= (first v) ::dep))
-                              (assoc-in acc [:component-deps k] (second v))
-
-                              (and (vector? v)
-                                   (contains? #{::env ::env-edn} (first v)))
-                              (assoc-in acc [:component-config k] (read-env-var (zipmap [:type :var-name :default] v)))
-
-                              :otherwise (assoc-in acc [:component-config k] v)))
+                            (process-config-pair config acc k v))
 
                           {:component-config {:phoenix/built? jar/built?}}
                           component-config)))
@@ -143,10 +162,10 @@
           sorted-deps))
 
 (defn read-config [config-resource {:keys [location]}]
-  (let [normalised-config (-> (load-config config-resource location)
-                              (normalise-deps))
-        sorted-deps (calculate-deps normalised-config)]
-    (-> (with-static-config normalised-config sorted-deps)
+  (let [processed-config (-> (load-config config-resource location)
+                             (process-config))
+        sorted-deps (calculate-deps processed-config)]
+    (-> (with-static-config processed-config sorted-deps)
         (with-meta {:sorted-deps sorted-deps}))))
 
 (comment
@@ -159,18 +178,18 @@
     (load-config (io/file "/home/james/config.edn") (l/get-location))))
 
 (comment
-  (let [config (-> {:c {::component 'my.ns/function
-                        :map-a ::dep
-                        :c1 ::dep
+  (let [config (-> {:c {:phoenix/component 'my.ns/function
+                        :map-a :phoenix/dep
+                        :c1 :phoenix/dep
                         :host "some-host"}
 
-                    :c1 {::component 'my.ns/function-1
-                         :a [::dep :map-a]}
+                    :c1 {:phoenix/component 'my.ns/function-1
+                         :a [:phoenix/dep :map-a]}
               
                     :map-a {:a 1
                             :b 2
-                            :c [::env :lein-home]}}
+                            :c [:phoenix/env-var :lein-home]}}
 
-                   normalise-deps)
+                   process-config)
         sorted-deps (calculate-deps config)]
     (with-static-config config sorted-deps)))
