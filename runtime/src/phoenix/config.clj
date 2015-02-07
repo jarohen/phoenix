@@ -1,5 +1,6 @@
 (ns phoenix.config
   (:require [phoenix.location :as l]
+            [phoenix.secret :as ps]
             [phoenix.merge :as pm]
             [phoenix.jar :as jar]
             [clojure.java.io :as io]
@@ -106,6 +107,12 @@
                                  :value s})))))]
     (assoc-in acc [:component-config k] (or (try-read-string (read-env-var var-name)) default))))
 
+(defmethod process-config-pair :phoenix/secret [{:keys [:phoenix/secret-keys]} acc k [_ secret-key-name cypher-text]]
+  (let [secret-key (get secret-keys secret-key-name)]
+    (assert secret-key (format "Phoenix: can't find secret key '%s'" secret-key-name))
+    
+    (assoc-in acc [:component-config k] (ps/decrypt cypher-text (get secret-keys secret-key-name)))))
+
 (defmethod process-config-pair :default [_ acc k v]
   (assoc-in acc [:component-config k] v))
 
@@ -164,6 +171,7 @@
 
 (comment
   (with-redefs [slurp {(io/file "/home/james/config.edn") "{:phoenix/includes [#phoenix/file \"~/config-include.edn\"]
+                                                            
                                                             :config {:a 1, :c 3}}"
                        (io/file "/home/james/config-include.edn") "{:phoenix/includes [#phoenix/file \"~/config-include2.edn\"]
                                                                     :config {:b 2, :c 4}}"
@@ -177,12 +185,15 @@
                         :c1 :phoenix/dep
                         :host "some-host"}
 
+                    :phoenix/secret-keys {:test "b32fc9e45d1d5cf5a931f1ac05829a931c1217ef254de7484140f659a4135e24"}
+
                     :c1 {:phoenix/component 'my.ns/function-1
                          :a [:phoenix/dep :map-a]}
               
                     :map-a {:a 1
                             :b 2
-                            :c [:phoenix/env-var :lein-home]}}
+                            :c [:phoenix/env-var :lein-home]
+                            :safe [:phoenix/secret :test "03d4cc27ac8a2efd5aeb98051b8ee28a764a86f7f5c0dc6648f28faf66fbd86cee5502d2989c176c4b3bef6a317fc473"]}}
 
                    process-config)
         sorted-deps (calculate-deps config)]
