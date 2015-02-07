@@ -8,7 +8,7 @@
 
   (try
     (if component
-      (eval `(~component ~static-config))
+      (eval `(~component '~static-config))
       static-config)
     
     (catch Exception e
