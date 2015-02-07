@@ -4,7 +4,7 @@
                  :source-path "ui-src"
 
                  :modules [{:name :main
-                            :mains #{'{{name}}.ui.app}
+                            :mains #{ {{name}}.ui.app}
                             :dependencies nil}]
 
                  :web-context-path "/js"
