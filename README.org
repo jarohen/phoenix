@@ -47,7 +47,7 @@ No worries, I understand :)
 First, include Phoenix as a plugin in your 'project.clj':
 
 #+BEGIN_SRC clojure
-  {:plugins [jarohen/phoenix "0.0.3"]}
+  {:plugins [jarohen/phoenix "0.0.4"]}
 #+END_SRC
 
 Next, make a small config file on your classpath - let's say, in the
@@ -170,13 +170,13 @@ entry in the config map:
 #+BEGIN_SRC clojure
   {:phoenix/nrepl-port 7888
 
-   :database {::component myapp.database/make-database-pool
+   :database {:phoenix/component myapp.database/make-database-pool
               :host "db-host"
               :port 5432
               ...}}
 #+END_SRC
 
-The =::component= entry in the =:database= map lets Phoenix know that
+The =:phoenix/component= entry in the =:database= map lets Phoenix know that
 this is a Component that needs to be started, by calling the provided
 function. Phoenix passes the remainder of the =:database= map to that
 function, so any configuration that the component needs can be stored
@@ -205,18 +205,18 @@ Components.
 Having created our database pool, we'd now like to use it in the rest
 of our application.
 
-We do this by registering a =::dep= in the configuration map:
+We do this by registering a =:phoenix/dep= in the configuration map:
 
 #+BEGIN_SRC clojure
   {:phoenix/nrepl-port 7888
 
-   :database {::component myapp.database/make-database-pool
+   :database {:phoenix/component myapp.database/make-database-pool
               :host "db-host"
               :port 5432
               ...}
 
-   :my-foo {::component myapp.foo/map->FooComponent
-            :database ::dep
+   :my-foo {:phoenix/component myapp.foo/map->FooComponent
+            :database :phoenix/dep
             ...}}
 #+END_SRC
 
@@ -263,13 +263,13 @@ follows:
 #+BEGIN_SRC clojure
   {:phoenix/nrepl-port 7888
 
-   :postgres {::component myapp.database/make-database-pool
+   :postgres {:phoenix/component myapp.database/make-database-pool
               :host "db-host"
               :port 5432
               ...}
 
-   :my-foo {::component myapp.foo/map->FooComponent
-            :database [::dep :postgres]
+   :my-foo {:phoenix/component myapp.foo/map->FooComponent
+            :database [:phoenix/dep :postgres]
             ...}}
 #+END_SRC
 
@@ -386,19 +386,19 @@ well!)
 *** Config in environment variables:
 
 Configuration keys can also reference environment variables, using
-either =[::env :env-var-name]= or
-=[::env-edn :env-var-name]=. Environment variable names are
+either =[:phoenix/env-var :env-var-name]= or
+=[:phoenix/edn-env-var :env-var-name]=. Environment variable names are
 automatically converted to 'UPPER_SNAKE_CASE'. The difference between
-=::env= and =::env-edn= is that environment variables referenced with
-=::env-edn= are parsed as EDN before being passed to your application.
+=:phoenix/env-var= and =:phoenix/env-edn= is that environment variables referenced with
+=:phoenix/edn-env-var= are parsed as EDN before being passed to your application.
 
 To provide a default, in case the environment variable isn't
-specified, include it with the vector: =[::env :my-env-var "default"]=
+specified, include it with the vector: =[:phoenix/env-var :my-env-var "default"]=
 
 #+BEGIN_SRC clojure
   {:my-component {:port 3000
-                  :username [::env :myapp-user "admin"]
-                  :password [::env :myapp-password "password-123"]}}
+                  :username [:phoenix/env-var :myapp-user "admin"]
+                  :password [:phoenix/env-var :myapp-password "password-123"]}}
 #+END_SRC
 
 #+BEGIN_SRC sh
