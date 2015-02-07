@@ -17,7 +17,9 @@
                  
                  [com.stuartsierra/component "0.2.2"]
                  [com.stuartsierra/dependency "0.1.1"]
-                 [medley "0.5.3"]]
+                 [medley "0.5.3"]
+
+                 [buddy/buddy-core "0.3.0"]]
   
   :resource-paths ["resources" "../common"]
 

@@ -106,12 +106,6 @@
                                  :value s})))))]
     (assoc-in acc [:component-config k] (or (try-read-string (read-env-var var-name)) default))))
 
-(defmethod process-config-pair :phoenix/secret [{:keys [:phoenix/secret-keys]} acc k [_ secret-key-name [cypher-text iv]]]
-  (let [secret-key (get secret-keys secret-key-name)]
-    (assert secret-key (format "Phoenix: can't find secret key '%s'" secret-key-name))
-    
-    (assoc-in acc [:component-config k] (ps/decrypt [cypher-text iv] (get secret-keys secret-key-name)))))
-
 (defmethod process-config-pair :default [_ acc k v]
   (assoc-in acc [:component-config k] v))
 
