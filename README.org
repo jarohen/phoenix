@@ -115,6 +115,23 @@ For more details about how the system is reloaded, and how to
 architect your application accordingly, I'd recommend reading Stuart
 Sierra's excellent [[http://thinkrelevance.com/blog/2013/06/04/clojure-workflow-reloaded]['My Clojure Workflow, Reloaded']] blog.
 
+*** For Emacs users:
+
+I use =(phoenix/reload!)= so much that I bind it to a single keypress,
+as follows:
+
+#+BEGIN_SRC elisp
+  (defun phoenix-reload ()
+    (interactive)
+    (save-some-buffers)
+    (with-current-buffer (cider-current-repl-buffer)
+      (cider-interactive-eval
+       "(phoenix/reload!)")))
+
+  (define-key cider-mode-map (kbd "C-`") 'phoenix-reload)
+  (define-key clojure-mode-map (kbd "C-`") 'phoenix-reload)
+#+END_SRC
+
 ** Configuring components:
 
 The system we've just created doesn't have any components yet (unless
