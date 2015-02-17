@@ -27,7 +27,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[jarohen/phoenix "0.0.4"]
+  :plugins [[jarohen/phoenix "0.0.5"]
             [jarohen/simple-brepl "0.2.1"]]
 
   :phoenix/config "{{name}}-config.edn"
