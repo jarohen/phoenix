@@ -1,5 +1,6 @@
 (ns leiningen.phoenix
   (:require [leiningen.uberjar :as u]
+            [leiningen.clean :as lc]
             [leinjacker.eval :refer [eval-in-project]]
             [clojure.java.io :as io]
             [phoenix.plugin :refer [select-project-keys]])
@@ -61,10 +62,14 @@
    Usage: lein phoenix uberjar"
   [project]
 
+  (when (:auto-clean project true)
+    (lc/clean project))
+  
   (let [built-project (-> project
                           build-system
                           include-aotd-main
-                          uberjar-project-map)]
+                          uberjar-project-map
+                          (assoc :auto-clean false))]
     (u/uberjar (-> built-project
                    (vary-meta #(assoc-in % [:without-profiles] built-project)))
                
