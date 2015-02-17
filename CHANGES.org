@@ -1,5 +1,14 @@
 * Changelog
 ** 0.0.x
+*** 0.0.5
+
+=lein phoenix uberjar= was falling foul of Leiningen's new (as of
+2.4.0) =:auto-clean= feature - any work done in the Phoenix build was
+being cleaned before the JAR was built.
+
+=:auto-clean= still works, but Phoenix now explicitly does it (if
+requested) before the build step, then disables it.
+
 *** 0.0.4
 
 Breaking changes - moving to be more compliant with the EDN spec, so
