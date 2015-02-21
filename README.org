@@ -73,7 +73,7 @@ as and when you declare one in your config file.
 You'll need to add the Phoenix runtime to your dependencies:
 
 #+BEGIN_SRC clojure
-  [jarohen/phoenix.runtime "0.0.2"]
+  [jarohen/phoenix.runtime "0.0.5"]
 #+END_SRC
 
 Then, from a REPL, run
