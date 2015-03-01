@@ -1,10 +1,11 @@
 (ns phoenix.build
-  (:require [phoenix]
-            [phoenix.config :as config]
+  (:require [phoenix.core :as pc]
+            [phoenix.deps :as pd]
             [phoenix.location :as l]
             [phoenix.system :as s]
             [clojure.java.io :as io]
             [com.stuartsierra.component :as c]
+            [com.stuartsierra.dependency :as deps]
             [medley.core :as m]))
 
 (defprotocol BuiltComponent
@@ -32,20 +33,15 @@
             [new-component new-project] build-results]
         {:system (assoc system component-id new-component)
          :project new-project})
-      
+
       acc)))
 
-(defn build-system [{phoenix-config :phoenix/config, :as project} out-file]
-  (config/assert-config phoenix-config)
-
-  (let [parsed-config (config/read-config (io/resource phoenix-config)
-                                          {:location (l/get-location)})
-        {:keys [sorted-deps]} (meta parsed-config)
-
-        initial-system (c/map->SystemMap (->> parsed-config
-                                              (m/map-vals s/make-component)))]
-
-    (alter-var-root #'phoenix/system (constantly initial-system))
+(defn build-system [{phoenix-config :phoenix/config, :as project}]
+  (let [parsed-config (pc/read-config {:config-resource (io/resource phoenix-config)})
+        initial-system (pc/make-system {:config parsed-config})
+        sorted-deps (->> parsed-config
+                         pd/calculate-deps-graph
+                         deps/topo-sort)]
 
     (->> (reduce (fn [{:keys [system project] :as acc} component-id]
                    (-> acc
@@ -57,13 +53,13 @@
 
                  sorted-deps)
 
-         :project
-         pr-str
-         (spit out-file))))
+         :project)))
 
 (defn build-system-main [project out-file]
   (try
-    (build-system project out-file)
+    (->> (build-system project)
+         pr-str
+         (spit out-file))
     (System/exit 0)
 
     (catch Exception e

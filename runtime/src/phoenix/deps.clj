@@ -12,3 +12,8 @@
 
           (deps/graph)
           config))
+
+(defn ordered-deps [config]
+  (->> (calculate-deps-graph config)
+       deps/topo-sort
+       (remove #{::system})))
