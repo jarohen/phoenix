@@ -8,7 +8,8 @@
             [clojure.java.io :as io]
             [clojure.tools.namespace.repl :as tn]
             [clojure.tools.logging :as log]
-            [com.stuartsierra.component :as c]))
+            [com.stuartsierra.component :as c]
+            phoenix.readers))
 
 (defonce ^:private config-resource
   nil)
