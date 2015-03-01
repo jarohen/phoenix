@@ -1,34 +1,43 @@
 (ns phoenix.system
-  (:require [medley.core :as m]
-            [com.stuartsierra.component :as c]))
+  (:require [phoenix.deps :as d]
+            [clojure.set :as set]
+            [com.stuartsierra.component :as c]
+            [com.stuartsierra.dependency :as deps]
+            [medley.core :as m]))
 
-(defn make-component [{:keys [component-id static-config component]}]
-  (when component
-    (require (symbol (namespace component))))
+(defn calculate-component-subset [system-config targets]
+  (if (empty? targets)
+    (keys system-config)
+
+    (set/union (let [deps-graph (d/calculate-deps-graph system-config)]
+                 (->> (for [target targets]
+                        (deps/transitive-dependencies deps-graph target))
+                      (apply set/intersection)))
+               (set targets))))
+
+(defn make-component [{:keys [component-id component-config component-fn]}]
+  (when (symbol? component-fn)
+    (require (symbol (namespace component-fn))))
 
   (try
-    (if component
-      (eval `(~component '~static-config))
-      static-config)
-    
+    (if component-fn
+      (eval `(~component-fn '~component-config))
+      component-config)
+
     (catch Exception e
       (throw (ex-info "Failed initialising component"
-                      {:component component-id
-                       :generator-fn component
-                       :config static-config}
+                      {:component-id component-id
+                       :component-fn component-fn
+                       :component-config component-config}
                       e)))))
 
-(defn system-deps [system-config]
-  (->> system-config
-       (m/map-vals :component-deps)
-       (m/remove-vals empty?)))
+(defn make-system [system-config & [{:keys [targets]}]]
+  (let [system-subset (-> system-config
+                          (select-keys (calculate-component-subset system-config targets)))]
 
-(defn phoenix-system [system-config]
-  (-> (apply c/system-map (->> system-config
-                               (m/map-vals make-component)
-                               seq
-                               (apply concat)))
-      
-      (c/system-using (system-deps system-config))))
+    (-> (c/map->SystemMap (->> system-subset
+                               (m/map-vals make-component)))
 
-
+        (c/system-using (->> system-subset
+                             (m/map-vals :component-deps)
+                             (m/remove-vals empty?))))))

@@ -2,68 +2,66 @@
       :clojure.tools.namespace.repl/unload false}
   phoenix
   (:require [phoenix.config :as config]
+            [phoenix.loader :as pl]
+            [phoenix.parser :as pp]
             [phoenix.location :as l]
             [phoenix.nrepl :refer [start-nrepl!]]
-            [phoenix.system :refer [phoenix-system]]
+            [phoenix.system :as ps]
             [clojure.java.io :as io]
             [clojure.tools.namespace.repl :as tn]
             [clojure.tools.logging :as log]
             [com.stuartsierra.component :as c]
+            [medley.core :as m]
             phoenix.readers))
 
-(defonce ^:private config-resource
-  nil)
+(defonce !default-config-resource
+  (atom nil))
 
-(defonce system
-  nil)
+(defonce !system
+  (atom nil))
 
-(defonce ^:private !started?
-  (atom false))
+(defn read-config [{:keys [config-resource location]}]
+  (-> (or config-resource @!default-config-resource)
+      (pl/load-config (merge (l/get-location)
+                             location))
+      (pp/parse-config)))
+
+(defn make-system [& [{:keys [config targets]}]]
+  (ps/make-system (or config (read-config))
+                  {:targets targets}))
 
 (defonce ^:private !location
-  (let [location (l/get-location)]
-    (atom {:original location
+  (atom (let [location (l/get-location)]
+          {:original location
            :current location})))
 
-(defn- make-system [location]
-  (-> (config/read-config config-resource
-                          {:location location})
-      phoenix-system))
-
 (defn set-location! [{:keys [environment host user] :as new-location}]
-  (assert (false? @!started?) "Can't change location when system is running...")
+  (assert (nil? @!system) "Can't change location when system is running...")
 
-  (let [new-location (swap! !location
-                            (fn [{:keys [original] :as old-location}]
-                              (assoc old-location
-                                :current (merge original new-location))))]
-
-    (log/info "Setting Phoenix location:" (pr-str (:current new-location)))
-
-    (alter-var-root #'system (constantly (make-system new-location)))
-    new-location))
+  (let [merged-location (swap! !location
+                               (fn [{:keys [original] :as old-location}]
+                                 (assoc old-location
+                                   :current (merge original new-location))))]
+    (log/info "Setting Phoenix location:" (:current merged-location))
+    merged-location))
 
 (defn- do-start! []
-  (let [started-system (alter-var-root #'system
-                                       (comp c/start-system
-                                             (constantly (make-system (:current @!location)))))]
-    (reset! !started? true)
-    started-system))
+  (reset! !system (-> {:config (read-config {:location @!location})}
+                      make-system
+                      c/start-system)))
 
 (defn start! []
-  (assert (false? @!started?) "System already started!")
+  (assert (nil? @!system) "System already started!")
 
   (binding [clojure.test/*load-tests* false]
     (tn/refresh :after 'phoenix/do-start!)))
 
 (defn stop! []
-  (alter-var-root #'system c/stop-system)
-  (reset! !started? false)
-  #'system)
+  (boolean (when-let [old-system (m/deref-reset! !system nil)]
+             (c/stop-system old-system))))
 
 (defn reload! [& [{:keys [environment host user] :as new-location}]]
-  (when @!started?
-    (stop!))
+  (stop!)
 
   (when new-location
     (set-location! new-location))
@@ -73,9 +71,8 @@
 (defn init-phoenix! [config-resource]
   (assert config-resource "Please specify a valid config resource")
 
-  (alter-var-root #'phoenix/config-resource (constantly config-resource)))
+  (reset! !default-config-resource config-resource))
 
 (defn init-nrepl! [{:keys [repl-options target-port root] :as project}]
-  (when-let [nrepl-port (get-in (config/read-config config-resource {:location (l/get-location)})
-                                [:phoenix/nrepl-port :static-config])]
+  (when-let [nrepl-port (get-in (read-config) [:phoenix/nrepl-port :component-config])]
     (start-nrepl! nrepl-port project)))

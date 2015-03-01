@@ -1,7 +1,5 @@
 (ns phoenix.all-in-test
-  (:require [phoenix]
-            [phoenix.system :refer [phoenix-system]]
-            [phoenix.config :refer [read-config]]
+  (:require [phoenix.core :as pc]
             [clojure.java.io :as io]
             [clojure.test :refer :all]
             [com.stuartsierra.component :as c]))
@@ -12,7 +10,7 @@
   (start [this]
     (println "Starting c" (pr-str this))
     this)
-  
+
   (stop [this]
     (println "Stopping c" (pr-str this))
     this))
@@ -26,7 +24,7 @@
   (start [this]
     (println "Starting c1" (pr-str this))
     (assoc this :started? true))
-  
+
   (stop [this]
     (println "Stopping c1" (pr-str this))
     (dissoc this :started?)))
@@ -36,7 +34,7 @@
 
 (defn run-system []
   (let [config-resource (io/resource "phoenix/test-config.edn")
-        started-system (c/start-system (phoenix-system (read-config config-resource)))]
+        started-system (c/start-system (pc/make-system {:config (pc/read-config {:config-resource config-resource})}))]
     (println "System started!")
     (c/stop-system started-system)
     (println "System stopped!")))
