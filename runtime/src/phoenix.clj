@@ -55,7 +55,8 @@
 
 (defn stop! []
   (alter-var-root #'system c/stop-system)
-  (reset! !started? false))
+  (reset! !started? false)
+  #'system)
 
 (defn reload! [& [{:keys [environment host user] :as new-location}]]
   (when @!started?
