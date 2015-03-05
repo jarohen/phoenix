@@ -1,5 +1,12 @@
 * Changelog
 ** 0.0.x
+*** 0.0.6
+
+Hard-coded path in =lein phoenix uberjar=. I am so so
+sorry... :embarrassed:
+
+Couple of other minor internal refactorings, no breaking changes.
+
 *** 0.0.5
 
 =lein phoenix uberjar= was falling foul of Leiningen's new (as of

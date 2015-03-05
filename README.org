@@ -35,7 +35,7 @@ Leiningen template:
 
 This will start an nREPL server on port 7888, start a web server on
 port 3000, and automatically re-compile your ClojureScript files if
-they change. 
+they change.
 
 When it starts, head to [[http://localhost:3000]] for further
 instructions.
@@ -47,7 +47,7 @@ No worries, I understand :)
 First, include Phoenix as a plugin in your 'project.clj':
 
 #+BEGIN_SRC clojure
-  {:plugins [jarohen/phoenix "0.0.5"]}
+  {:plugins [jarohen/phoenix "0.0.6"]}
 #+END_SRC
 
 Next, make a small config file on your classpath - let's say, in the
@@ -73,7 +73,7 @@ as and when you declare one in your config file.
 You'll need to add the Phoenix runtime to your dependencies:
 
 #+BEGIN_SRC clojure
-  [jarohen/phoenix.runtime "0.0.5"]
+  [jarohen/phoenix.runtime "0.0.6"]
 #+END_SRC
 
 Then, from a REPL, run
@@ -199,7 +199,7 @@ function. Phoenix passes the remainder of the =:database= map to that
 function, so any configuration that the component needs can be stored
 here.
 
-Let's reload the system, and see the component started! 
+Let's reload the system, and see the component started!
 
 #+BEGIN_SRC clojure
   (phoenix/reload!)
@@ -379,8 +379,8 @@ can be used as follows:
   ;; myapp-config.edn
 
   {:phoenix/includes [#phoenix/file "~/.myapp/passwords.edn"]
-   
-   :database {:host "..." 
+
+   :database {:host "..."
               :user "..."
               ...}}
 
@@ -442,7 +442,7 @@ This creates an executable JAR file, which can then be run with:
 Phoenix has a number of optional 'built-in' components, each with
 their own documentation:
 
-- [[https://github.com/james-henderson/phoenix/tree/master/modules/cljs][ClojureScript]] 
+- [[https://github.com/james-henderson/phoenix/tree/master/modules/cljs][ClojureScript]]
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/aleph][Aleph]] (web server)
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/http-kit][http-kit]] (web-server)
 
