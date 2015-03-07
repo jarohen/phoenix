@@ -1,34 +1,21 @@
 (ns ^{:clojure.tools.namespace.repl/load false
       :clojure.tools.namespace.repl/unload false}
   phoenix
-  (:require [phoenix.config :as config]
-            [phoenix.loader :as pl]
-            [phoenix.parser :as pp]
+  (:require [phoenix.core :refer [read-config make-system]]
             [phoenix.location :as l]
             [phoenix.nrepl :refer [start-nrepl!]]
-            [phoenix.system :as ps]
-            [clojure.java.io :as io]
-            [clojure.tools.namespace.repl :as tn]
             [clojure.tools.logging :as log]
+            [clojure.tools.namespace.repl :as tn]
             [com.stuartsierra.component :as c]
-            [medley.core :as m]
-            phoenix.readers))
+            [medley.core :as m]))
+
+;; This namespace is the 'magical' API :)
 
 (defonce !default-config-resource
   (atom nil))
 
 (defonce !system
   (atom nil))
-
-(defn read-config [{:keys [config-resource location]}]
-  (-> (or config-resource @!default-config-resource)
-      (pl/load-config (merge (l/get-location)
-                             location))
-      (pp/parse-config)))
-
-(defn make-system [& [{:keys [config targets]}]]
-  (ps/make-system (or config (read-config))
-                  {:targets targets}))
 
 (defonce ^:private !location
   (atom (let [location (l/get-location)]
@@ -46,7 +33,8 @@
     merged-location))
 
 (defn- do-start! []
-  (reset! !system (-> {:config (read-config {:location @!location})}
+  (reset! !system (-> {:config (read-config {:location @!location
+                                             :config-resource @!default-config-resource})}
                       make-system
                       c/start-system)))
 
@@ -74,5 +62,6 @@
   (reset! !default-config-resource config-resource))
 
 (defn init-nrepl! [{:keys [repl-options target-port root] :as project}]
-  (when-let [nrepl-port (get-in (read-config) [:phoenix/nrepl-port :component-config])]
+  (when-let [nrepl-port (-> (read-config {:config-resource @!default-config-resource})
+                            (get-in [:phoenix/nrepl-port :component-config]))]
     (start-nrepl! nrepl-port project)))
