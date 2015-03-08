@@ -1,8 +1,8 @@
 * Phoenix
 
-Phoenix is a library that helps with simple configuration for
-Component-based systems, based on (and hopefully superceding)
-[[https://github.com/james-henderson/nomad][Nomad]] and [[https://github.com/james-henderson/frodo][Frodo]].
+Phoenix is a library that helps with simple configuration and
+credential management for Component-based systems, based on (and
+hopefully superceding) [[https://github.com/james-henderson/nomad][Nomad]] and [[https://github.com/james-henderson/frodo][Frodo]].
 
 If you've written a traditional Component-based system, you've
 probably experienced having to create a plethora of 'system.clj',
@@ -14,13 +14,41 @@ Phoenix removes the need for all of this, replacing it with one (or
 more, if you choose) EDN declaration of how your system should be
 wired up.
 
-It also (optionally) includes a number of common Components to get you
+It also (optionally) includes a number of [[https://github.com/james-henderson/phoenix/tree/master/modules][common Components]] to get you
 started - a ClojureScript compiler component, as well as components
-for [[http://www.http-kit.org/][http-kit]] and [[https://github.com/ztellman/aleph][Aleph]]. After that, it composes well with any
-'Lifecycle' components that you (or anyone else) may have already
-written.
+for [[http://www.http-kit.org/][http-kit]] and [[https://github.com/ztellman/aleph][Aleph]], amongst others. After that, it composes well
+with any 'Lifecycle' components that you (or anyone else) may have
+already written.
+
+** Contents
+
+- [[#getting-started][Getting Started]]
+- [[#configuring-components][Configuring components]]
+- [[#building-phoenix-based-projects][Building Phoenix-based projects]]
+- [[#managing-your-passwordscredentials][Managing your passwords/credentials]]
+- [[#removing-the-batteries][Removing the batteries]]
+- [[#built-in-components]['Built-in' components]]
 
 ** Getting started:
+
+Phoenix is architected in a '*batteries included, but removable*'
+style (credit to Docker, I think, for originally coining that phrase).
+
+As a result, it has two APIs:
+
+- a '*batteries included*' API, in the =phoenix= namespace, suitable
+  for most use-cases - it's what I use the vast majority of the
+  time. It does rely on a little bit of global state but, for that
+  cost, you get much simpler/quicker development setup and turn-around
+  times.
+- a pure, '*batteries removable*' API, in the =phoenix.core=
+  namespace, for when you need more composability/flexibility
+  (e.g. test harnesses). Indeed, the 'batteries included' API is built
+  on top of this core.
+
+The rest of this section will get you started with the 'batteries
+included' API; further details on the 'batteries removable' API are
+below.
 
 *** 'Just get me up and running already!'
 
@@ -47,7 +75,7 @@ No worries, I understand :)
 First, include Phoenix as a plugin in your 'project.clj':
 
 #+BEGIN_SRC clojure
-  {:plugins [jarohen/phoenix "0.0.6"]}
+  {:plugins [jarohen/phoenix "0.0.7"]}
 #+END_SRC
 
 Next, make a small config file on your classpath - let's say, in the
@@ -73,7 +101,7 @@ as and when you declare one in your config file.
 You'll need to add the Phoenix runtime to your dependencies:
 
 #+BEGIN_SRC clojure
-  [jarohen/phoenix.runtime "0.0.6"]
+  [jarohen/phoenix.runtime "0.0.7"]
 #+END_SRC
 
 Then, from a REPL, run
@@ -88,7 +116,7 @@ Then, from a REPL, run
 
 After that, Phoenix should behave as documented below.
 
-** Reloading the system
+*** Reloading the system
 
 Just as real-life Phoenixes die and are re-born from the ashes, so too
 does this Phoenix. At your REPL, you have a choice of three Phoenix
@@ -141,6 +169,8 @@ you used the template, of course!) - let's add some:
 
 Let's say we've written a component that makes a database connection
 pool:
+
+(There is, in fact, a [[https://github.com/james-henderson/phoenix/tree/master/modules/jdbc-pool][JDBC Pool Component]] already written for this!)
 
 #+BEGIN_SRC clojure
   (ns myapp.database
@@ -206,13 +236,13 @@ Let's reload the system, and see the component started!
 #+END_SRC
 
 The currently running Phoenix system is always available at
-=phoenix/system=, so you can use this to see what's been created:
+=phoenix/!system=, so you can use this to see what's been created:
 
 #+BEGIN_SRC clojure
-  (:database phoenix/system)
+  (:database @phoenix/!system)
 #+END_SRC
 
-N.B =phoenix/system= is intended for debugging/REPL use only -
+N.B =phoenix/!system= is intended for debugging/REPL use only -
 fundamentally, it's a global variable, so it's best not to rely on it
 in live code! Phoenix has other, more composable ways of linking
 Components.
@@ -364,7 +394,6 @@ You can also pass the location map as an argument to 'reload':
   (phoenix/reload! {:environment "stg"})
 #+END_SRC
 
-
 *** Referencing other config files:
 
 You might have some configuration values that you don't want to check
@@ -437,6 +466,180 @@ This creates an executable JAR file, which can then be run with:
   java -jar target/myapp-standalone.jar
 #+END_SRC
 
+** Managing your passwords/credentials
+
+Phoenix can manage your passwords/credentials in the same source
+repository as the rest of your configuration, but without checking
+plain-text credentials into version control.
+
+It does this through encrypting the credentials using 256-bit AES,
+with the keys stored in a separate configuration file.
+
+*** Setting up:
+
+1. Generate your first key:
+
+   #+BEGIN_SRC clojure
+     (phoenix.secret/generate-key)
+
+     ;; for example:
+     ;; => "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2"
+   #+END_SRC
+
+2. Create a keys file outside of version control (either outside the
+   VCS root, or 'ignored' by your VCS), under the
+   =:phoenix/secret-keys= key, as follows:
+
+   #+BEGIN_SRC clojure
+     ;; ~/.my-phoenix-keys.edn
+     {:phoenix/secret-keys {:my-first-key "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2"}}
+   #+END_SRC
+
+   Here, =:my-first-key= is our Key ID. Share this with other
+   developers, and place it on production machines, as necessary. You
+   can also encrypt production credentials with a different key, if
+   need be.
+
+3. Include that file in our checked-in configuration:
+
+   #+BEGIN_SRC clojure
+     {:phoenix/includes [#phoenix/file "~/.my-phoenix-keys.edn", ...]
+
+      ...}
+   #+END_SRC
+
+4. Encrypt your first password:
+
+   #+BEGIN_SRC clojure
+     (phoenix.secret/encrypt "password-123" ; plain-text
+                             "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2") ; key
+
+     ;; => "6a1623eeda59772a6e948b2b7e17fdcf28cec8398243a2307b781819fb360bd1"
+     ;; although will be different when you run it, even if you run this example
+   #+END_SRC
+
+   Optionally, you can decrypt it again with:
+
+   #+BEGIN_SRC clojure
+     (phoenix.secret/decrypt "6a1623eeda59772a6e948b2b7e17fdcf28cec8398243a2307b781819fb360bd1" ; cypher-text
+                             "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2") ; key
+
+     ;; => "password-123"
+   #+END_SRC
+
+   You can encrypt any EDN data structure using =(phoenix.secret/encrypt ...)=, not just strings:
+
+   #+BEGIN_SRC clojure
+     (let [sample-key (phoenix.secret/generate-key)]
+       (-> {:a 1, :b 2}
+           (phoenix.secret/encrypt sample-key)
+           (phoenix.secret/decrypt sample-key)))
+
+     ;; => {:a 1, :b 2}
+   #+END_SRC
+
+5. Include that in your main configuration file
+
+   You'll need to let Phoenix know: a) that it's encrypted; and b)
+   what key it was encrypted with, which you can do as follows:
+
+   #+BEGIN_SRC clojure
+     {:db {:phoenix/component ...
+           :user "my-user"
+           :password [:phoenix/secret :my-first-key "6a1623eeda59772a6e948b2b7e17fdcf28cec8398243a2307b781819fb360bd1"]}}
+   #+END_SRC
+
+6. Retrieve the credential as you would any other Phoenix
+   configuration value - it's decrypted automatically:
+
+   #+BEGIN_SRC clojure
+     (defrecord DBComponent []
+       c/Lifecycle
+       (start [{:keys [user password]}]
+         ;; Would advise against _actually_ doing this, of course...
+         ;; => "My database password is: password-123"
+
+         (println "My database password is:" password))
+
+
+       (stop [_]
+         ...))
+
+
+     (get-in @phoenix/!system [:db :password])
+     ;; => "password-123"
+   #+END_SRC
+
+*** Security Auditing
+
+This part of the codebase has not been security audited as yet (as far
+as I know!), and so, as such, I'd advise against its use in critical
+systems. If you can help by casting more pairs of eyes over this (it's
+only about 70LoC, based atop [[https://github.com/funcool/buddy][Buddy]]), I'd be very grateful!
+
+** Removing the batteries
+
+The 'batteries included' Phoenix API simply calls through to the
+'batteries removed' API in order to start a system. It does this in 5
+stages:
+
+1. Load config files + handle =:phoenix/includes=:
+
+   #+BEGIN_SRC clojure
+     (phoenix.core/load-config {:config-resource (io/resource "...")
+                                :location {:environment "live"}})
+   #+END_SRC
+
+   Using =:location= (optional key), you can load the configuration
+   for a different location (i.e. changing the =:environment=, =:host=
+   or =:user=).
+
+2. The result is analyzed to determine the component dependency order,
+   and aliases: =(phoenix.core/analyze-config loaded-config)=
+
+3. The analyzed config is turned into a =com.stuartsierra.component/SystemMap=:
+   =(phoenix.core/make-system analyzed-config {:targets targets})=
+
+   If you do not want the whole system started (e.g. for testing a
+   sub-system), specify the component keys that you ~do~ want started
+   as =targets=, otherwise, feel free to omit the second parameter
+   entirely.
+
+4. The system is started: =(com.stuartsierra.component/start-system system)=
+
+5. Later, the system is stopped with
+   =(com.stuartsierra.component/stop-system started-system)=
+
+There's nothing to stop *you* doing this, as well!
+
+If you need the flexibility/composability, you can adapt any one of
+these steps to suit your needs. e.g.:
+
+- Replace the =load-config= step to pass a config map directly
+  (without reading it from a file)
+- Pass a different location to step 1, to see what configuration would
+  be present under a different environment
+- Just run step 1 to see what configuration values Phoenix is using
+  (e.g. to test out the location switching)
+- Update the configuration map between steps 1 & 2, or 2 & 3, in order
+  to temporarily override a configuration value
+- And many more...
+
+You can also use the =phoenix.core/with-running-system= macro to set
+up and tear down a system, for testing purposes:
+
+#+BEGIN_SRC clojure
+  (require '[phoenix.core :as pc])
+
+  (pc/with-running-system [{:keys [component-under-test]} (-> (pc/load-config {:config-resource (io/resource "app-config.edn")})
+                                                              pc/analyze-config
+                                                              (pc/make-system {:targets [:component-under-test]}))]
+
+    ;; test 'component-under-test' - it (and all of its dependencies) will be started before, and stopped after, this block
+
+    (is (= ...)))
+#+END_SRC
+
 ** 'Built-in' components
 
 Phoenix has a number of optional 'built-in' components, each with
@@ -445,6 +648,7 @@ their own documentation:
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/cljs][ClojureScript]]
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/aleph][Aleph]] (web server)
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/http-kit][http-kit]] (web-server)
+- [[https://github.com/james-henderson/phoenix/tree/master/modules/jdbc-pool][JDBC Connection Pool]]
 
 ** Questions/Suggestions/Bugs/Features/PRs?
 

@@ -2,9 +2,15 @@
   (:require [phoenix.merge :refer [deep-merge]]
             [medley.core :as m]
             [clojure.java.shell :refer [sh]]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [schema.core :as sc]))
 
-(defn get-location []
+(def Location
+  {(sc/optional-key :environment) (sc/maybe sc/Str)
+   (sc/optional-key :host) (sc/maybe sc/Str)
+   (sc/optional-key :user) (sc/maybe sc/Str)})
+
+(sc/defn get-location :- Location []
   {:environment (or (get (System/getenv) "PHOENIX_ENV")
                     (System/getProperty "phoenix.env"))
 
@@ -12,31 +18,13 @@
    ;; someone complains first, I suspect. If you do see this, I'm
    ;; generally quite quick at merging PRs ;)
    :host (s/trim (:out (sh "hostname")))
-   
+
    :user (System/getProperty "user.name")})
 
-(defn extract-location-config [{environments :phoenix/environments, hosts :phoenix/hosts, :as config}]
+(sc/defn select-location [config {:keys [environment host user] :as location} :- Location]
   {:general (dissoc config :phoenix/environments :phoenix/hosts)
-   :hosts (some->> hosts
-                   (m/map-vals #(dissoc % :phoenix/users)))
-   :hosts-users (->> (for [[hostname {users :phoenix/users}] hosts
-                           [user host-user-config] users]
-                       [[hostname user] host-user-config])
-                     (into {}))
-   :environments environments})
-
-(defn merge-configs [{:keys [general hosts hosts-users environments]} {:keys [environment host user]}]
-  (deep-merge general
-              (get hosts host)
-              (get hosts-users [host user])
-              (get environments environment)
-              
-              {:phoenix/includes (concat (:phoenix/includes general)
-                                         (get-in hosts [host :phoenix/includes])
-                                         (get-in hosts-users [[host user] :phoenix/includes])
-                                         (get-in environments [[environment] :phoenix/includes]))}))
-
-(defn combine-config [config location]
-  (-> config
-      extract-location-config
-      (merge-configs location)))
+   :host (-> (get-in config [:phoenix/hosts (or host :default)])
+             (dissoc :phoenix/users))
+   :user (get-in config [:phoenix/hosts (or host :default)
+                         :phoenix/users (or user :default)])
+   :environment (get-in config [:phoenix/environments (or environment :default)])})
