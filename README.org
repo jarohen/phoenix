@@ -14,20 +14,38 @@ Phoenix removes the need for all of this, replacing it with one (or
 more, if you choose) EDN declaration of how your system should be
 wired up.
 
-It also (optionally) includes a number of common Components to get you
+It also (optionally) includes a number of [[https://github.com/james-henderson/phoenix/tree/master/modules][common Components]] to get you
 started - a ClojureScript compiler component, as well as components
-for [[http://www.http-kit.org/][http-kit]] and [[https://github.com/ztellman/aleph][Aleph]]. After that, it composes well with any
-'Lifecycle' components that you (or anyone else) may have already
-written.
+for [[http://www.http-kit.org/][http-kit]] and [[https://github.com/ztellman/aleph][Aleph]], amongst others. After that, it composes well
+with any 'Lifecycle' components that you (or anyone else) may have
+already written.
 
 ** Contents
 
 - [[#getting-started][Getting Started]]
-- [[#reloading-the-system][Reloading the System]]
 - [[#configuring-components][Configuring components]]
 - [[#built-in-components]['Built-in' components]]
 
 ** Getting started:
+
+Phoenix is architected in a '*batteries included, but removable*'
+style (credit to Docker, I think, for originally coining that phrase).
+
+As a result, it has two APIs:
+
+- a '*batteries included*' API, in the =phoenix= namespace, suitable
+  for most use-cases - it's what I use the vast majority of the
+  time. It does rely on a little bit of global state but, for that
+  cost, you get much simpler/quicker development setup and turn-around
+  times.
+- a pure, '*batteries removable*' API, in the =phoenix.core=
+  namespace, for when you need more composability/flexibility
+  (e.g. test harnesses). Indeed, the 'batteries included' API is built
+  on top of this core.
+
+The rest of this section will get you started with the 'batteries
+included' API; further details on the 'batteries removable' API are
+below.
 
 *** 'Just get me up and running already!'
 
@@ -95,7 +113,7 @@ Then, from a REPL, run
 
 After that, Phoenix should behave as documented below.
 
-** Reloading the system
+*** Reloading the system
 
 Just as real-life Phoenixes die and are re-born from the ashes, so too
 does this Phoenix. At your REPL, you have a choice of three Phoenix
