@@ -10,18 +10,18 @@
             [schema.core :as s]
             phoenix.readers))
 
-(s/defn load-config [{:keys [config-resource location]} :- {:config-resource (s/protocol io/IOFactory)
-                                                            (s/optional-key :location) l/Location}]
+(s/defn load-config [{:keys [config-source location]} :- {:config-source (s/protocol io/IOFactory)
+                                                          (s/optional-key :location) l/Location}]
 
-  (pl/load-config {:config-resource config-resource
+  (pl/load-config {:config-source config-source
                    :location (merge (l/get-location)
                                     location)}))
 
 (defn analyze-config [config]
   (pa/analyze-config config))
 
-(defn make-system [config & [{:keys [targets]}]]
-  (ps/make-system config {:targets targets}))
+(defn make-system [analyzed-config & [{:keys [targets]}]]
+  (ps/make-system analyzed-config {:targets targets}))
 
 (defn with-running-system* [system f]
   (let [started-system (c/start-system system)]

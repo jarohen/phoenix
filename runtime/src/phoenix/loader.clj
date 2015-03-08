@@ -45,8 +45,8 @@
                  (conj loaded-sources config-source)
                  (conj configs new-config)))))))
 
-(defn load-config [initial-source location]
-  (-> (load-config-sources initial-source location)
+(defn load-config [{:keys [config-source location]}]
+  (-> (load-config-sources config-source location)
       deep-merge
       ((juxt :general :host :user :environment))
       deep-merge

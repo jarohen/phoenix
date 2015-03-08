@@ -1,7 +1,7 @@
 (ns ^{:clojure.tools.namespace.repl/load false
       :clojure.tools.namespace.repl/unload false}
   phoenix
-  (:require [phoenix.core :refer [read-config make-system]]
+  (:require [phoenix.core :as pc]
             [phoenix.location :as l]
             [phoenix.nrepl :refer [start-nrepl!]]
             [clojure.tools.logging :as log]
@@ -11,7 +11,7 @@
 
 ;; This namespace is the 'magical' API :)
 
-(defonce !default-config-resource
+(defonce !default-config-source
   (atom nil))
 
 (defonce !system
@@ -33,9 +33,10 @@
     merged-location))
 
 (defn- do-start! []
-  (reset! !system (-> {:config (read-config {:location @!location
-                                             :config-resource @!default-config-resource})}
-                      make-system
+  (reset! !system (-> (pc/load-config {:config-source @!default-config-source
+                                       :location (:current @!location)})
+                      pc/analyze-config
+                      pc/make-system
                       c/start-system)))
 
 (defn start! []
@@ -56,12 +57,12 @@
 
   (start!))
 
-(defn init-phoenix! [config-resource]
-  (assert config-resource "Please specify a valid config resource")
+(defn init-phoenix! [config-source]
+  (assert config-source "Please specify a valid config source")
 
-  (reset! !default-config-resource config-resource))
+  (reset! !default-config-source config-source))
 
 (defn init-nrepl! [{:keys [repl-options target-port root] :as project}]
-  (when-let [nrepl-port (-> (read-config {:config-resource @!default-config-resource})
-                            (get-in [:phoenix/nrepl-port :component-config]))]
+  (when-let [nrepl-port (-> (pc/load-config {:config-source @!default-config-source})
+                            :phoenix/nrepl-port)]
     (start-nrepl! nrepl-port project)))
