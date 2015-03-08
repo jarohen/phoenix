@@ -26,6 +26,7 @@ already written.
 - [[#configuring-components][Configuring components]]
 - [[#building-phoenix-based-projects][Building Phoenix-based projects]]
 - [[#managing-your-passwordscredentials][Managing your passwords/credentials]]
+- [[#removing-the-batteries][Removing the batteries]]
 - [[#built-in-components]['Built-in' components]]
 
 ** Getting started:
@@ -575,6 +576,69 @@ This part of the codebase has not been security audited as yet (as far
 as I know!), and so, as such, I'd advise against its use in critical
 systems. If you can help by casting more pairs of eyes over this (it's
 only about 70LoC, based atop [[https://github.com/funcool/buddy][Buddy]]), I'd be very grateful!
+
+** Removing the batteries
+
+The 'batteries included' Phoenix API simply calls through to the
+'batteries removed' API in order to start a system. It does this in 5
+stages:
+
+1. Load config files + handle =:phoenix/includes=:
+
+   #+BEGIN_SRC clojure
+     (phoenix.core/load-config {:config-resource (io/resource "...")
+                                :location {:environment "live"}})
+   #+END_SRC
+
+   Using =:location= (optional key), you can load the configuration
+   for a different location (i.e. changing the =:environment=, =:host=
+   or =:user=).
+
+2. The result is analyzed to determine the component dependency order,
+   and aliases: =(phoenix.core/analyze-config loaded-config)=
+
+3. The analyzed config is turned into a =com.stuartsierra.component/SystemMap=:
+   =(phoenix.core/make-system analyzed-config {:targets targets})=
+
+   If you do not want the whole system started (e.g. for testing a
+   sub-system), specify the component keys that you ~do~ want started
+   as =targets=, otherwise, feel free to omit the second parameter
+   entirely.
+
+4. The system is started: =(com.stuartsierra.component/start-system system)=
+
+5. Later, the system is stopped with
+   =(com.stuartsierra.component/stop-system started-system)=
+
+There's nothing to stop *you* doing this, as well!
+
+If you need the flexibility/composability, you can adapt any one of
+these steps to suit your needs. e.g.:
+
+- Replace the =load-config= step to pass a config map directly
+  (without reading it from a file)
+- Pass a different location to step 1, to see what configuration would
+  be present under a different environment
+- Just run step 1 to see what configuration values Phoenix is using
+  (e.g. to test out the location switching)
+- Update the configuration map between steps 1 & 2, or 2 & 3, in order
+  to temporarily override a configuration value
+- And many more...
+
+You can also use the =phoenix.core/with-running-system= macro to set
+up and tear down a system, for testing purposes:
+
+#+BEGIN_SRC clojure
+  (require '[phoenix.core :as pc])
+
+  (pc/with-running-system [{:keys [component-under-test]} (-> (pc/load-config {:config-resource (io/resource "app-config.edn")})
+                                                              pc/analyze-config
+                                                              (pc/make-system {:targets [:component-under-test]}))]
+
+    ;; test 'component-under-test' - it (and all of its dependencies) will be started before, and stopped after, this block
+
+    (is (= ...)))
+#+END_SRC
 
 ** 'Built-in' components
 
