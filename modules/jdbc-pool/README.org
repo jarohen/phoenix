@@ -1,3 +1,54 @@
-* JDBC pool - Phoenix module
+* JDBC Pool - Phoenix module
 
-Docs to come...
+This is a module to start a JDBC connection pool in a Phoenix
+system, based on [[http://commons.apache.org/proper/commons-dbcp/][Apache Commons DBCP2]].
+
+** Getting started
+
+Add this in your 'project.clj', as a dependency:
+
+#+BEGIN_SRC clojure
+  [jarohen/phoenix.modules.jdbc-pool "0.0.3"]
+#+END_SRC
+
+In your Phoenix config, add a connection pool component, with your
+database config:
+
+#+BEGIN_SRC clojure
+  {:db-pool {:phoenix/component phoenix.modules.jdbc-pool/make-jdbc-pool
+             :driver "org.postgresql.Driver" ; optional - we'll guess it if you don't specify one!
+             :subprotocol "postgresql"
+             :host "..."
+             :port 5432
+             :username "..."
+             :password [:phoenix/secret :secret-key-id "..."]
+             :db "..."}
+
+   :my-component {:phoenix/component myapp.my-component/map->MyComponent
+                  :db-pool :phoenix/dep}}
+#+END_SRC
+
+For further details about Phoenix credential management, or
+environment overrides, please see the [[https://github.com/james-henderson/phoenix/][main Phoenix README]].
+
+This module is currently very basic and so only accepts the options
+above - if you want to supply other options to the connection pool,
+PRs are very gratefully received!
+
+In your component, call =(phoenix.modules.jdbc-pool/db-conn db-pool)=
+to get a connection suitable for clojure.java.jdbc's query/etc
+functions:
+
+#+BEGIN_SRC clojure
+  (require '[clojure.java.jdbc :as jdbc]
+           '[phoenix.modules.jdbc-pool :as db])
+
+  (defrecord MyComponent []
+    (start [{:keys [db-pool]}]
+      (jdbc/query (db/db-conn db-pool)
+                  ["SELECT COUNT(*) FROM my_table"]
+                  ...)
+      ...)
+
+    (stop [_] ...))
+#+END_SRC
