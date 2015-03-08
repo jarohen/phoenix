@@ -17,7 +17,7 @@
                  :repl-options (repl-options)}]
 
     (alter-var-root #'phoenix.jar/built? (constantly true))
-    
+
     (phoenix/init-phoenix! (io/resource (phoenix-config-location)))
 
     (phoenix/init-nrepl! project)

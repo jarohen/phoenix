@@ -2,9 +2,15 @@
   (:require [phoenix.merge :refer [deep-merge]]
             [medley.core :as m]
             [clojure.java.shell :refer [sh]]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [schema.core :as sc]))
 
-(defn get-location []
+(def Location
+  {(sc/optional-key :environment) (sc/maybe sc/Str)
+   (sc/optional-key :host) (sc/maybe sc/Str)
+   (sc/optional-key :user) (sc/maybe sc/Str)})
+
+(sc/defn get-location :- Location []
   {:environment (or (get (System/getenv) "PHOENIX_ENV")
                     (System/getProperty "phoenix.env"))
 
@@ -15,7 +21,7 @@
 
    :user (System/getProperty "user.name")})
 
-(defn select-location [config {:keys [environment host user] :as location}]
+(sc/defn select-location [config {:keys [environment host user] :as location} :- Location]
   {:general (dissoc config :phoenix/environments :phoenix/hosts)
    :host (-> (get-in config [:phoenix/hosts (or host :default)])
              (dissoc :phoenix/users))

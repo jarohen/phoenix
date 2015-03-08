@@ -37,15 +37,16 @@
       acc)))
 
 (defn build-system [{phoenix-config :phoenix/config, :as project}]
-  (let [parsed-config (pc/read-config {:config-resource (io/resource phoenix-config)})
-        initial-system (pc/make-system {:config parsed-config})
-        sorted-deps (->> parsed-config
+  (let [analyzed-config (-> (pc/load-config {:config-source (io/resource phoenix-config)})
+                            pc/analyze-config)
+        initial-system (pc/make-system {:config analyzed-config})
+        sorted-deps (->> analyzed-config
                          pd/calculate-deps-graph
                          deps/topo-sort)]
 
     (->> (reduce (fn [{:keys [system project] :as acc} component-id]
                    (-> acc
-                       (update-in [:system] populate-deps (get parsed-config component-id))
+                       (update-in [:system] populate-deps (get analyzed-config component-id))
                        (build-component component-id)))
 
                  {:system initial-system
