@@ -4,7 +4,7 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  
+
   :dependencies [[org.clojure/clojure "1.7.0-alpha4"]
 
                  [ring/ring-core "1.3.0"]
@@ -27,7 +27,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[jarohen/phoenix "0.0.5"]
+  :plugins [[jarohen/phoenix "0.0.7"]
             [jarohen/simple-brepl "0.2.1"]]
 
   :phoenix/config "{{name}}-config.edn"
