@@ -20,6 +20,13 @@ for [[http://www.http-kit.org/][http-kit]] and [[https://github.com/ztellman/ale
 'Lifecycle' components that you (or anyone else) may have already
 written.
 
+** Contents
+
+- [[#getting-started][Getting Started]]
+- [[#reloading-the-system][Reloading the System]]
+- [[#configuring-components][Configuring components]]
+- [[#built-in-components]['Built-in' components]]
+
 ** Getting started:
 
 *** 'Just get me up and running already!'
@@ -142,6 +149,8 @@ you used the template, of course!) - let's add some:
 Let's say we've written a component that makes a database connection
 pool:
 
+(There is, in fact, a [[https://github.com/james-henderson/phoenix/tree/master/modules/jdbc-pool][JDBC Pool Component]] already written for this!)
+
 #+BEGIN_SRC clojure
   (ns myapp.database
     (:require [com.stuartsierra.component :as c]))
@@ -206,13 +215,13 @@ Let's reload the system, and see the component started!
 #+END_SRC
 
 The currently running Phoenix system is always available at
-=phoenix/system=, so you can use this to see what's been created:
+=phoenix/!system=, so you can use this to see what's been created:
 
 #+BEGIN_SRC clojure
-  (:database phoenix/system)
+  (:database @phoenix/!system)
 #+END_SRC
 
-N.B =phoenix/system= is intended for debugging/REPL use only -
+N.B =phoenix/!system= is intended for debugging/REPL use only -
 fundamentally, it's a global variable, so it's best not to rely on it
 in live code! Phoenix has other, more composable ways of linking
 Components.
@@ -364,7 +373,6 @@ You can also pass the location map as an argument to 'reload':
   (phoenix/reload! {:environment "stg"})
 #+END_SRC
 
-
 *** Referencing other config files:
 
 You might have some configuration values that you don't want to check
@@ -445,6 +453,7 @@ their own documentation:
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/cljs][ClojureScript]]
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/aleph][Aleph]] (web server)
 - [[https://github.com/james-henderson/phoenix/tree/master/modules/http-kit][http-kit]] (web-server)
+- [[https://github.com/james-henderson/phoenix/tree/master/modules/jdbc-pool][JDBC Connection Pool]]
 
 ** Questions/Suggestions/Bugs/Features/PRs?
 
