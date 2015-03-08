@@ -1,5 +1,22 @@
 * Changelog
 ** 0.0.x
+*** 0.0.7
+
+Breaking changes: =phoenix/system= is now an atom, to be found at
+=phoenix/!system= - =s:phoenix/system:@phoenix/!system:g= should
+migrate you - although, of course, you shouldn't be using
+=phoenix/!system= outside the REPL!
+
+Lots of breaking changes to the internal namespaces, to make them
+purer - Phoenix is now split into 'batteries included' and 'batteries
+removeable' APIs. (See 'Removing the batteries', in the README, for
+more details)
+
+Added =(phoenix.core/with-running-system [system (...)] ...)= to make
+testing a sub-system much easier.
+
+Thanks to [[https://github.com/krisajenkins][Kris Jenkins]] for his feedback!
+
 *** 0.0.6
 
 Hard-coded path in =lein phoenix uberjar=. I am so so
