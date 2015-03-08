@@ -586,7 +586,7 @@ stages:
 1. Load config files + handle =:phoenix/includes=:
 
    #+BEGIN_SRC clojure
-     (phoenix.core/load-config {:config-resource (io/resource "...")
+     (phoenix.core/load-config {:config-source (io/resource "...") ; or (io/file "...")
                                 :location {:environment "live"}})
    #+END_SRC
 
