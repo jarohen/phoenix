@@ -1,0 +1,7 @@
+{:phoenix/nrepl-port 7888
+
+ :web-handler {:phoenix/component {{name}}.handler/map->AppHandler}
+
+ :server {:phoenix/component phoenix.modules.aleph/make-web-server
+          :handler [:phoenix/dep :web-handler]
+          :port 3000}}

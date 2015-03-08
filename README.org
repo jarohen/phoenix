@@ -52,8 +52,8 @@ below.
 
 *** 'Just get me up and running already!'
 
-For an 'all-batteries-included' project, try the 'phoenix-webapp'
-Leiningen template:
+For an 'all-batteries-included' project, try either of the
+'phoenix-api' or the 'phoenix-webapp' Leiningen templates:
 
 #+BEGIN_SRC sh
   lein new phoenix-webapp <your-project>
