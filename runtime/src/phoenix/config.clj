@@ -17,25 +17,17 @@
                (io/resource config-resource))
           "Please make sure you have a valid config resource specified at ':phoenix/config' in your 'project.clj'"))
 
-(def phoenix-readers
-  {'phoenix/file (comp io/file #(s/replace % #"^~" (System/getProperty "user.home")))
-   'phoenix/resource (some-fn io/resource
-                              
-                              (fn [path]
-                                (log/warn "Can't read config-file:" path)
-                                ::invalid-include))})
-
 (defn parse-config [s]
   (when (string? s)
-    (edn/read-string {:readers phoenix-readers}
+    (edn/read-string {:readers *data-readers*}
                      s)))
 
 (defn try-slurp [slurpable]
   (try
     (slurp slurpable)
-    
+
     (catch Exception e
-      (log/warn "Can't read config-file:" slurpable)
+      (log/warnf "Can't read config-file: '%s', ignoring..." slurpable)
       ::invalid-include)))
 
 (defn ->seq [el-or-coll]
@@ -53,7 +45,7 @@
 
       (if-not config-resource
         (recur more-resources loaded-resources config)
-        
+
         (let [new-config (-> (try-slurp config-resource)
                              parse-config
                              (l/combine-config location))]
@@ -62,9 +54,9 @@
                                              ->seq
                                              (remove #(contains? loaded-resources %))
                                              (remove #{::invalid-include})))
-                 
+
                  (conj loaded-resources config-resource)
-                 
+
                  (pm/deep-merge config (dissoc new-config
                                          :phoenix/includes))))))))
 
