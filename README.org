@@ -1,8 +1,8 @@
 * Phoenix
 
-Phoenix is a library that helps with simple configuration for
-Component-based systems, based on (and hopefully superceding)
-[[https://github.com/james-henderson/nomad][Nomad]] and [[https://github.com/james-henderson/frodo][Frodo]].
+Phoenix is a library that helps with simple configuration and
+credential management for Component-based systems, based on (and
+hopefully superceding) [[https://github.com/james-henderson/nomad][Nomad]] and [[https://github.com/james-henderson/frodo][Frodo]].
 
 If you've written a traditional Component-based system, you've
 probably experienced having to create a plethora of 'system.clj',
@@ -24,6 +24,8 @@ already written.
 
 - [[#getting-started][Getting Started]]
 - [[#configuring-components][Configuring components]]
+- [[#building-phoenix-based-projects][Building Phoenix-based projects]]
+- [[#managing-your-passwordscredentials][Managing your passwords/credentials]]
 - [[#built-in-components]['Built-in' components]]
 
 ** Getting started:
@@ -462,6 +464,117 @@ This creates an executable JAR file, which can then be run with:
   # Replace this with the actual path to the uberjar
   java -jar target/myapp-standalone.jar
 #+END_SRC
+
+** Managing your passwords/credentials
+
+Phoenix can manage your passwords/credentials in the same source
+repository as the rest of your configuration, but without checking
+plain-text credentials into version control.
+
+It does this through encrypting the credentials using 256-bit AES,
+with the keys stored in a separate configuration file.
+
+*** Setting up:
+
+1. Generate your first key:
+
+   #+BEGIN_SRC clojure
+     (phoenix.secret/generate-key)
+
+     ;; for example:
+     ;; => "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2"
+   #+END_SRC
+
+2. Create a keys file outside of version control (either outside the
+   VCS root, or 'ignored' by your VCS), under the
+   =:phoenix/secret-keys= key, as follows:
+
+   #+BEGIN_SRC clojure
+     ;; ~/.my-phoenix-keys.edn
+     {:phoenix/secret-keys {:my-first-key "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2"}}
+   #+END_SRC
+
+   Here, =:my-first-key= is our Key ID. Share this with other
+   developers, and place it on production machines, as necessary. You
+   can also encrypt production credentials with a different key, if
+   need be.
+
+3. Include that file in our checked-in configuration:
+
+   #+BEGIN_SRC clojure
+     {:phoenix/includes [#phoenix/file "~/.my-phoenix-keys.edn", ...]
+
+      ...}
+   #+END_SRC
+
+4. Encrypt your first password:
+
+   #+BEGIN_SRC clojure
+     (phoenix.secret/encrypt "password-123" ; plain-text
+                             "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2") ; key
+
+     ;; => "6a1623eeda59772a6e948b2b7e17fdcf28cec8398243a2307b781819fb360bd1"
+     ;; although will be different when you run it, even if you run this example
+   #+END_SRC
+
+   Optionally, you can decrypt it again with:
+
+   #+BEGIN_SRC clojure
+     (phoenix.secret/decrypt "6a1623eeda59772a6e948b2b7e17fdcf28cec8398243a2307b781819fb360bd1" ; cypher-text
+                             "b14127be18a2408ed7037c98e7a3a6783651881539d1b8df4ebbc27ab335caf2") ; key
+
+     ;; => "password-123"
+   #+END_SRC
+
+   You can encrypt any EDN data structure using =(phoenix.secret/encrypt ...)=, not just strings:
+
+   #+BEGIN_SRC clojure
+     (let [sample-key (phoenix.secret/generate-key)]
+       (-> {:a 1, :b 2}
+           (phoenix.secret/encrypt sample-key)
+           (phoenix.secret/decrypt sample-key)))
+
+     ;; => {:a 1, :b 2}
+   #+END_SRC
+
+5. Include that in your main configuration file
+
+   You'll need to let Phoenix know: a) that it's encrypted; and b)
+   what key it was encrypted with, which you can do as follows:
+
+   #+BEGIN_SRC clojure
+     {:db {:phoenix/component ...
+           :user "my-user"
+           :password [:phoenix/secret :my-first-key "6a1623eeda59772a6e948b2b7e17fdcf28cec8398243a2307b781819fb360bd1"]}}
+   #+END_SRC
+
+6. Retrieve the credential as you would any other Phoenix
+   configuration value - it's decrypted automatically:
+
+   #+BEGIN_SRC clojure
+     (defrecord DBComponent []
+       c/Lifecycle
+       (start [{:keys [user password]}]
+         ;; Would advise against _actually_ doing this, of course...
+         ;; => "My database password is: password-123"
+
+         (println "My database password is:" password))
+
+
+       (stop [_]
+         ...))
+
+
+     (get-in @phoenix/!system [:db :password])
+     ;; => "password-123"
+   #+END_SRC
+
+*** Security Auditing
+
+This part of the codebase has not been security audited as yet (as far
+as I know!), and so, as such, I'd advise against its use in critical
+systems. If you can help by casting more pairs of eyes over this (it's
+only about 70LoC, based atop [[https://github.com/funcool/buddy][Buddy]]), I'd be very grateful!
 
 ** 'Built-in' components
 
