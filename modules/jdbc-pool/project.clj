@@ -1,4 +1,4 @@
-(defproject jarohen/phoenix.modules.jdbc-pool "0.0.3"
+(defproject jarohen/phoenix.modules.jdbc-pool "0.0.4"
   :description "A module to set up a JDBC connection pool component in Phoenix"
   :url "https://github.com/james-henderson/phoenix"
   :license {:name "Eclipse Public License"

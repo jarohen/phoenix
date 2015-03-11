@@ -8,7 +8,7 @@ system, based on [[http://commons.apache.org/proper/commons-dbcp/][Apache Common
 Add this in your 'project.clj', as a dependency:
 
 #+BEGIN_SRC clojure
-  [jarohen/phoenix.modules.jdbc-pool "0.0.3"]
+  [jarohen/phoenix.modules.jdbc-pool "0.0.4"]
 #+END_SRC
 
 In your Phoenix config, add a connection pool component, with your
@@ -22,7 +22,9 @@ database config:
              :port 5432
              :username "..."
              :password [:phoenix/secret :secret-key-id "..."]
-             :db "..."}
+             :db "..."
+             :max-total 8
+             :max-idle 8}
 
    :my-component {:phoenix/component myapp.my-component/map->MyComponent
                   :db-pool :phoenix/dep}}

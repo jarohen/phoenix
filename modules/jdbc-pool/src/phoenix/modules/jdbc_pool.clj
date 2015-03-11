@@ -16,7 +16,7 @@
 
 (defrecord DatabaseComponent []
   c/Lifecycle
-  (start [{:keys [driver subprotocol host port username password db] :as this}]
+  (start [{:keys [driver subprotocol host port username password db max-total max-idle] :as this}]
     (log/info "Starting JDBC pool...")
 
     (assoc this
@@ -25,12 +25,14 @@
                (.setAccessToUnderlyingConnectionAllowed true)
                (.setUrl (format "jdbc:%s://%s:%s/%s" subprotocol host port db))
                (.setUsername username)
-               (.setPassword password))))
-  
+               (.setPassword password)
+               (cond-> max-total (.setMaxTotal max-total))
+               (cond-> max-idle (.setMaxIdle max-idle)))))
+
   (stop [{:keys [::pool] :as this}]
     (when pool
       (.close pool))
-    
+
     (dissoc this ::pool))
 
   DatabasePool
