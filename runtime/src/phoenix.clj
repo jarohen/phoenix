@@ -11,11 +11,10 @@
 
 ;; This namespace is the 'magical' API :)
 
-(defonce !default-config-source
+(defonce ^:private !default-config-source
   (atom nil))
 
-(defonce !system
-  (atom nil))
+(def system (atom nil))
 
 (defonce ^:private !location
   (atom (let [location (l/get-location)]
@@ -23,7 +22,7 @@
            :current location})))
 
 (defn set-location! [{:keys [environment host user] :as new-location}]
-  (assert (nil? @!system) "Can't change location when system is running...")
+  (assert (nil? @system) "Can't change location when system is running...")
 
   (let [merged-location (swap! !location
                                (fn [{:keys [original] :as old-location}]
@@ -33,20 +32,20 @@
     merged-location))
 
 (defn- do-start! []
-  (reset! !system (-> (pc/load-config {:config-source @!default-config-source
+  (reset! system (-> (pc/load-config {:config-source @!default-config-source
                                        :location (:current @!location)})
                       pc/analyze-config
                       pc/make-system
                       c/start-system)))
 
 (defn start! []
-  (assert (nil? @!system) "System already started!")
+  (assert (nil? @system) "System already started!")
 
   (binding [clojure.test/*load-tests* false]
     (tn/refresh :after 'phoenix/do-start!)))
 
 (defn stop! []
-  (boolean (when-let [old-system (m/deref-reset! !system nil)]
+  (boolean (when-let [old-system (m/deref-reset! system nil)]
              (c/stop-system old-system))))
 
 (defn reload! [& [{:keys [environment host user] :as new-location}]]

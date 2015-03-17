@@ -236,13 +236,13 @@ Let's reload the system, and see the component started!
 #+END_SRC
 
 The currently running Phoenix system is always available at
-=phoenix/!system=, so you can use this to see what's been created:
+=phoenix/system=, so you can use this to see what's been created:
 
 #+BEGIN_SRC clojure
-  (:database @phoenix/!system)
+  (:database @phoenix/system)
 #+END_SRC
 
-N.B =phoenix/!system= is intended for debugging/REPL use only -
+N.B =phoenix/system= is intended for debugging/REPL use only -
 fundamentally, it's a global variable, so it's best not to rely on it
 in live code! Phoenix has other, more composable ways of linking
 Components.
@@ -566,7 +566,7 @@ with the keys stored in a separate configuration file.
          ...))
 
 
-     (get-in @phoenix/!system [:db :password])
+     (get-in @phoenix/system [:db :password])
      ;; => "password-123"
    #+END_SRC
 

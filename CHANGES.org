@@ -1,5 +1,11 @@
 * Changelog
 ** 0.0.x
+*** 0.0.8
+
+Breaking changes: =phoenix/!system= renamed back to =phoenix/system=,
+but it's still an atom, so you can access the currently running system
+with =@phoenix/system=
+
 *** 0.0.7
 
 Breaking changes: =phoenix/system= is now an atom, to be found at
