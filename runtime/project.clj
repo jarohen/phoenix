@@ -14,6 +14,8 @@
                  [org.clojure/tools.logging "0.3.1"]
                  [org.clojure/tools.reader "0.8.13"]
 
+                 [jarohen/phoenix.build "0.0.1"]
+
                  [camel-snake-kebab "0.2.4"]
 
                  [com.stuartsierra/component "0.2.2"]

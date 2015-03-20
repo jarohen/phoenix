@@ -2,8 +2,8 @@
       :clojure.tools.namespace.repl/unload false}
 
   phoenix.modules.cljs
-  
-  (:require [phoenix.build :as pb]
+
+  (:require [phoenix.build.protocols :as pbp]
             [com.stuartsierra.component :as c]
             [shadow.cljs.build :as cljs]
             [clojure.java.io :as io]
@@ -36,7 +36,7 @@
 
                        (log-time-end [_ msg ms]
                          (log/log 'shadow.cljs.build :debug nil (format "<- %s (%dms)" msg ms)))))
-      
+
       (cljs/step-find-resources-in-jars)))
 
 (defonce !initial-state
@@ -47,7 +47,7 @@
                            {:keys [source-maps? pretty-print? modules optimizations
                                    web-context-path externs output-dir public-dir source-path]
                             :as opts}]
-  (-> state   
+  (-> state
       (assoc :optimizations optimizations
              :pretty-print pretty-print?
              :public-path web-context-path
@@ -56,24 +56,24 @@
              :cache-dir (io/file output-dir "cache")
              :work-dir (io/file output-dir "work")
              :externs externs)
-      
+
       (cond-> source-maps? (cljs/enable-source-maps))
-      
+
       (cljs/step-find-resources source-path)
-      
+
       (add-modules modules)
       (cljs/step-finalize-config)
       (cljs/step-compile-core)))
 
 (defn do-compile-run [{:keys [optimizations] :as state}]
   (log/info "Compiling CLJS...")
-  
+
   (let [state-with-compiled-modules (-> state
                                         (cljs/step-reload-modified)
                                         (cljs/step-compile-modules))
 
         _ (log/info "Compiled CLJS.")
-        
+
         optimized-state (if (and optimizations
                                  (not= optimizations :none))
                           (let [_ (log/info "Optimizing CLJS...")
@@ -82,14 +82,14 @@
                                                     (cljs/closure-optimize)
                                                     (cljs/flush-to-disk)
                                                     (cljs/flush-modules-to-disk))
-                                
+
                                 _ (log/info "Optimized CLJS.")]
-                            
+
                             optimized-state)
-                          
+
                           (-> state-with-compiled-modules
                               (cljs/flush-unoptimized)))]
-    
+
     optimized-state))
 
 (defrecord CLJSCompiler []
@@ -101,7 +101,7 @@
                                                                          :optimizations (get-in this [:dev :optimizations] :none)
                                                                          :pretty-print? (get-in this [:dev :pretty-print?] true)))
                                                   do-compile-run)]
-      
+
       (go-loop [cljs-state initial-state]
         (a/alt!
           (a/thread (cljs/wait-for-modified-files! cljs-state))
@@ -113,14 +113,14 @@
       (assoc this
         ::stop-ch stop-ch
         :configured-modules modules)))
-  
+
   (stop [{stop-ch ::stop-ch}]
     (a/close! stop-ch))
 
-  pb/BuiltComponent
+  pbp/BuiltComponent
   (build [{:keys [output-dir], :or {output-dir (io/file "target/cljs")}, :as this} project]
     (log/info "Building CLJS...")
-    
+
     (let [build-output-dir (io/file output-dir "build")
           jar-dir (io/file output-dir "jar")]
       (-> @!initial-state
@@ -133,10 +133,10 @@
           do-compile-run)
 
       (log/info "Built CLJS.")
-      
+
       [this (update project :filespecs conj {:type :path
                                              :path (.getPath jar-dir)})]))
-  
+
   CLJSComponent
   (bidi-routes [{:keys [web-context-path output-dir]}]
     [web-context-path (br/files {:dir (.getPath (io/file output-dir "public"))})])
