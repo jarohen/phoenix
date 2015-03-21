@@ -1,0 +1,15 @@
+* CLJS Component - Changelog
+** 0.0.x
+
+*** 0.0.2
+
+Breaking change - config structure changed significantly - please
+check the README for further details.
+
+The CLJS component is no longer based atop shadow-build (good though
+it was!) because the official CLJS repository now supports everything
+we need.
+
+*** 0.0.1
+
+Initial release, based atop [[https://github.com/thheller/shadow-build][shadow-build]].
