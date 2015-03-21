@@ -1,0 +1,14 @@
+* Phoenix Webapp template
+
+To create a webapp, run:
+
+#+BEGIN_SRC sh
+  lein new phoenix-webapp <your-app-name> -- <:frontend-library>
+#+END_SRC
+
+where =<:frontend-library>= is one of:
+
+- =:flow=
+- =:reagent=
+- =:om-sablono=
+- =:om=

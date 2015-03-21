@@ -31,14 +31,14 @@
               "Hello from Phoenix!"]
 
              [:h3 "Things to try:"]
-                  
+
              [:ul
               [:li [:p "In your Clojure REPL, run " [code "(phoenix/reload!)"] " to completely reload the webapp without restarting the JVM."]]
               [:li [:p "Connect to a CLJS bREPL by running " [code "(simple-brepl)"]]]
               [:li
                [:p "Once you've opened the bREPL, reload your browser to make the connection, then you can eval some CLJS."]
                [:p "I recommend:"]
-                    
+
                [:ul
                 [:li [code "(+ 1 1)"]]
                 [:li [code "(js/alert \"Hello world!\")"]]
@@ -62,5 +62,3 @@
                "Twitter: " [:a {:href "https://twitter.com/jarohen"} "@jarohen"]
                [:br]
                "GitHub: " [:a {:href "https://github.com/james-henderson"} "james-henderson"]]]]))))
-
-

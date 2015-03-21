@@ -14,11 +14,13 @@
                  [ring-middleware-format "0.4.0"]
 
                  [jarohen/phoenix.modules.aleph "0.0.1"]
-                 [jarohen/phoenix.modules.cljs "0.0.2"]
 
                  [org.clojure/clojurescript "0.0-3126"]
+                 [jarohen/phoenix.modules.cljs "0.0.3"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [jarohen/flow "0.3.0-alpha3"]
+
+                 {{#flow?}}[jarohen/flow "0.3.0-alpha3"]{{/flow?}}{{#om?}}[org.omcljs/om "0.8.8"]{{#sablono?}}
+                 [sablono "0.3.4"]{{/sablono?}}{{/om?}}{{#reagent?}}[reagent "0.5.0"]{{/reagent?}}
 
                  [org.clojure/tools.logging "0.3.1"]
                  [org.slf4j/slf4j-api "1.7.9"]
