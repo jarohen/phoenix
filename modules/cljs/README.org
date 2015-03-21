@@ -1,59 +1,58 @@
 * ClojureScript - Phoenix Module
 
 This is a module to automatically re-compile ClojureScript files
-within a Phoenix system, based atop [[https://github.com/thheller/shadow-build][shadow-build]]. It's been adapted
-from Malcolm Sparks's Modular [[https://github.com/juxt/modular/tree/master/modules/cljs/][CLJS module]].
+within a Phoenix system. It's been adapted from Malcolm Sparks's
+Modular [[https://github.com/juxt/modular/tree/master/modules/cljs/][CLJS module]].
+
+You don't have to use Phoenix to use this module (although I recommend
+you check it out - it's great! #biased). If you don't, simply call
+=(phoenix.modules.cljs/make-cljs-compiler <config-map>)= in your
+Component System setup, and the effect is the same.
 
 ** Getting started
 
 Add this in your 'project.clj', as a dependency:
 
 #+BEGIN_SRC clojure
-  [jarohen/phoenix.modules.cljs "0.0.1"]
+  [jarohen/phoenix.modules.cljs "0.0.2"]
 #+END_SRC
 
 In your Phoenix config, add an CLJS compiler component and a
 web-handler component (written by you):
 
 #+BEGIN_SRC clojure
-  {:web-handler {::component myapp.handler/map->WebHandler
-                 :cljs-compiler ::dep}
+  {:web-handler {:phoenix/component myapp.handler/map->WebHandler
+                 :cljs-compiler :phoenix/dep}
 
-   :cljs-compiler {::component phoenix.modules.cljs/make-cljs-compiler
+   :cljs-compiler {:phoenix/component phoenix.modules.cljs/make-cljs-compiler
                    :source-path "ui-src"
+                   :target-path "target/cljs/"
 
-                   :modules [{:name :main
-
-                              ;; Phoenix >= 0.0.4
-                              :mains #{myapp.ui.app}
-                              ;; Phoenix < 0.0.4
-                              :mains #{'myapp.ui.app}
-
-                              :dependencies nil}]
-
-                   ;; JS files will be served under the '/js' context
                    :web-context-path "/js"
-                   :output-dir "target/cljs/"
 
                    :externs [...]
 
                    :dev {:optimizations :none
                          :pretty-print? true}
-                   
+
                    :build {:optimizations :advanced
                            :pretty-print? false
                            :classpath-prefix "js"}}}
 #+END_SRC
 
-Shadow-build's 'modules' allow you to split out your CLJS code into
+The CLJS component handles the =:output-to= and =:output-dir= etc keys
+for you - simply specify a =:target-path=, and the CLJS component will
+ensure a consistent directory structure under that.
+
+Clojurescript's 'modules' allow you to split out your CLJS code into
 multiple entry points, by defining 'main' namespaces, so that you
 don't have to serve up all of your CLJS to each page, if you don't
-need to. For more details, please see the [[https://github.com/thheller/shadow-build][shadow-build]] docs.
+need to.
 
-The CLJS module also expects =:dev= and =:build= configuration
+The CLJS component also expects =:dev= and =:build= configuration
 maps. The =:dev= map is used for normal interactive development - in
 this example, it doesn't use any CLJS optimizations, so that your CLJS
-is re-compiled quickly. 
+is re-compiled quickly.
 
 The =:build= map, on the other hand, is used to pre-compile your CLJS
 when your project is built (uberjar'd). In this case, we can use
@@ -75,9 +74,13 @@ use in your own handler:
   ;; structure:
   (cljs/bidi-routes cljs-compiler)
 
+  ;; Returns the relative URL of the compiled JS file for the main
+  ;; JS file, for use in <script src="..." /> tags:
+  (cljs/path-for-js cljs-compiler)
+
   ;; Returns the relative URL of the compiled JS file for the given
   ;; module, for use in <script src="..." /> tags:
-  (cljs/path-for-module cljs-compiler :main)
+  (cljs/path-for-module cljs-compiler :my-module)
 #+END_SRC
 
 Your handler might, therefore, look something like this:
@@ -96,7 +99,7 @@ Your handler might, therefore, look something like this:
      [:head
       [:title ...]
 
-      [:script {:src (cljs/path-for-module cljs-compiler :main)}]
+      [:script {:src (cljs/path-for-js cljs-compiler)}]
       ...]
 
      [:body
@@ -116,14 +119,14 @@ Your handler might, therefore, look something like this:
           (handle-page req cljs-compiler))
 
         (cljs/cljs-handler cljs-compiler))
-      
+
       ;; e.g. Bidi
       (make-handler ["" [{"/" {:get :page-handler}}
                          (cljs/bidi-routes cljs-compiler)]]
-                    
+
                     (some-fn {:page-handler (fn [req]
                                               (handle-page req cljs-compiler))}
-                             
+
                              #(when (fn? %) %)))))
 #+END_SRC
 
