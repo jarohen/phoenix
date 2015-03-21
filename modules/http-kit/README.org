@@ -16,10 +16,10 @@ In your Phoenix config, add an http-kit web-server component and a
 web-handler component (written by you):
 
 #+BEGIN_SRC clojure
-  {:web-handler {::component myapp.handler/map->WebHandler}
+  {:web-handler {:phoenix/component myapp.handler/map->WebHandler}
 
-   :server {::component phoenix.modules.http-kit/make-web-server
-            :handler [::dep :web-handler]
+   :server {:phoenix/component phoenix.modules.http-kit/make-web-server
+            :handler [:phoenix/dep :web-handler]
             :port 3000}}
 #+END_SRC
 
@@ -49,11 +49,11 @@ protocol - for example:
         (GET "/css/site.css" []
           (-> (response ...)
               (content-type "text/css"))))
-      
+
       ;; e.g. Bidi
       (make-handler ["" {"/" {:get :page-handler}
                          "/css" {"/site.css" {:get :site-css}}}]
-                    
+
                     {:page-handler handle-page
                      :site-css (fn [req]
                                  (-> (response ...)
