@@ -20,7 +20,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[jarohen/phoenix "0.0.7"]]
+  :plugins [[jarohen/phoenix "0.0.9"]]
 
   :phoenix/config "{{name}}-config.edn"
 

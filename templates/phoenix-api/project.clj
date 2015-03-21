@@ -1,4 +1,4 @@
-(defproject phoenix-api/lein-template "0.0.1"
+(defproject phoenix-api/lein-template "0.0.2"
   :description "A template to generate a Phoenix API project"
   :url "https://github.com/james-henderson/phoenix"
   :license {:name "Eclipse Public License"
