@@ -1,5 +1,6 @@
 (ns phoenix.build
-  (:require [phoenix.core :as pc]
+  (:require [phoenix.build.protocols :as pbp]
+            [phoenix.core :as pc]
             [phoenix.deps :as pd]
             [phoenix.location :as l]
             [phoenix.system :as s]
@@ -7,11 +8,6 @@
             [com.stuartsierra.component :as c]
             [com.stuartsierra.dependency :as deps]
             [medley.core :as m]))
-
-(defprotocol BuiltComponent
-  (build [_ project]
-    "Builds any necessary artifacts, and returns a pair of the updated
-    component and the updated project map"))
 
 (defn merge-deps [m1 m2]
   (if (and (map? m1)
@@ -25,8 +21,8 @@
 
 (defn- build-component [{:keys [system project] :as acc} component-id]
   (let [component (get system component-id)]
-    (if (satisfies? BuiltComponent component)
-      (let [build-results (build component project)
+    (if (satisfies? pbp/BuiltComponent component)
+      (let [build-results (pbp/build component project)
             _ (assert (and (vector? build-results)
                            (= 2 (count build-results)))
                       "phoenix.build/BuiltComponent.build should return a pair - the updated component and the updated project map.")
@@ -39,14 +35,15 @@
 (defn build-system [{phoenix-config :phoenix/config, :as project}]
   (let [analyzed-config (-> (pc/load-config {:config-source (io/resource phoenix-config)})
                             pc/analyze-config)
-        initial-system (pc/make-system {:config analyzed-config})
+        initial-system (pc/make-system analyzed-config)
         sorted-deps (->> analyzed-config
                          pd/calculate-deps-graph
                          deps/topo-sort)]
 
     (->> (reduce (fn [{:keys [system project] :as acc} component-id]
                    (-> acc
-                       (update-in [:system] populate-deps (get analyzed-config component-id))
+                       (update :system populate-deps (assoc (get analyzed-config component-id)
+                                                       :component-id component-id))
                        (build-component component-id)))
 
                  {:system initial-system

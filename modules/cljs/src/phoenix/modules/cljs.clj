@@ -1,151 +1,108 @@
-(ns ^{:clojure.tools.namespace.repl/load false
-      :clojure.tools.namespace.repl/unload false}
-
-  phoenix.modules.cljs
-  
-  (:require [phoenix.build :as pb]
-            [com.stuartsierra.component :as c]
-            [shadow.cljs.build :as cljs]
-            [clojure.java.io :as io]
+(ns phoenix.modules.cljs
+  (:require [phoenix.build.protocols :as pbp]
+            [phoenix.modules.cljs.file-watcher :as watch]
+            [bidi.ring :as br]
             [clojure.core.async :as a :refer [go-loop]]
+            [clojure.java.io :as io]
             [clojure.tools.logging :as log]
-            [bidi.ring :as br]))
+            [cljs.closure :as cljs]
+            [cljs.env :as cljs-env]
+            [com.stuartsierra.component :as c]))
 
-(defprotocol CLJSComponent
+(defprotocol ICLJSCompiler
   (bidi-routes [_])
   (cljs-handler [_])
+  (path-for-js [_])
   (path-for-module [_ module]))
 
-(defn add-modules [state modules]
-  (reduce (fn [state {:keys [name mains dependencies]}]
-            (cljs/step-configure-module state name mains dependencies))
-          state
-          modules))
+(defn normalise-output-locations [{:keys [web-context-path target-path classpath-prefix modules], :or {target-path "target/cljs"} :as opts} build-mode]
+  (let [output-dir (doto (io/file target-path (name build-mode))
+                     .mkdirs)
+        mains-dir (doto (io/file output-dir "mains" (or classpath-prefix ""))
+                       .mkdirs)
+        module-dir (when (not-empty modules)
+                     (doto (io/file mains-dir "modules")
+                       .mkdirs))]
+    (-> opts
+        (cond-> (empty? modules) (assoc :output-to (.getPath (io/file mains-dir "main.js"))))
 
-(defn initial-cached-compiler []
-  (-> (cljs/init-state)
-      (assoc :logger (reify cljs/BuildLog
-                       (log-warning [_ msg]
-                         (log/log 'shadow.cljs.build :warn nil msg))
+        (assoc :output-dir (.getPath output-dir)
+               :target-path target-path
+               :asset-path web-context-path)
 
-                       (log-progress [_ msg]
-                         (log/log 'shadow.cljs.build :trace nil msg))
+        (update :modules (fn [modules]
+                           (->> (for [[module-key module-opts] modules]
+                                  [module-key (assoc module-opts
+                                                :output-to (.getPath (io/file module-dir
+                                                                              (str (name module-key) ".js"))))])
+                                (into {})))))))
 
-                       (log-time-start [_ msg]
-                         (log/log 'shadow.cljs.build :debug nil (format "-> %s" msg)))
-
-                       (log-time-end [_ msg ms]
-                         (log/log 'shadow.cljs.build :debug nil (format "<- %s (%dms)" msg ms)))))
-      
-      (cljs/step-find-resources-in-jars)))
-
-(defonce !initial-state
-  (delay
-    (initial-cached-compiler)))
-
-(defn init-compiler-state [state
-                           {:keys [source-maps? pretty-print? modules optimizations
-                                   web-context-path externs output-dir public-dir source-path]
-                            :as opts}]
-  (-> state   
-      (assoc :optimizations optimizations
-             :pretty-print pretty-print?
-             :public-path web-context-path
-             :public-dir (or public-dir
-                             (io/file output-dir "public"))
-             :cache-dir (io/file output-dir "cache")
-             :work-dir (io/file output-dir "work")
-             :externs externs)
-      
-      (cond-> source-maps? (cljs/enable-source-maps))
-      
-      (cljs/step-find-resources source-path)
-      
-      (add-modules modules)
-      (cljs/step-finalize-config)
-      (cljs/step-compile-core)))
-
-(defn do-compile-run [{:keys [optimizations] :as state}]
-  (log/info "Compiling CLJS...")
-  
-  (let [state-with-compiled-modules (-> state
-                                        (cljs/step-reload-modified)
-                                        (cljs/step-compile-modules))
-
-        _ (log/info "Compiled CLJS.")
-        
-        optimized-state (if (and optimizations
-                                 (not= optimizations :none))
-                          (let [_ (log/info "Optimizing CLJS...")
-
-                                optimized-state (-> state-with-compiled-modules
-                                                    (cljs/closure-optimize)
-                                                    (cljs/flush-to-disk)
-                                                    (cljs/flush-modules-to-disk))
-                                
-                                _ (log/info "Optimized CLJS.")]
-                            
-                            optimized-state)
-                          
-                          (-> state-with-compiled-modules
-                              (cljs/flush-unoptimized)))]
-    
-    optimized-state))
+(defn build-cljs! [{:keys [source-path target-path] :as cljs-opts} cljs-compiler-env]
+  (let [start-time (System/nanoTime)]
+    (log/infof "Compiling CLJS, from '%s' to '%s'..." source-path target-path)
+    (cljs/build source-path (into {} cljs-opts) cljs-compiler-env)
+    (log/infof "Compiled CLJS, from '%s' to '%s', in %.2fs."
+               source-path
+               target-path
+               (/ (- (System/nanoTime) start-time) 1e9))))
 
 (defrecord CLJSCompiler []
   c/Lifecycle
-  (start [this]
-    (let [stop-ch (a/chan)
-          {:keys [modules] :as initial-state} (-> (init-compiler-state @!initial-state
-                                                                       (assoc this
-                                                                         :optimizations (get-in this [:dev :optimizations] :none)
-                                                                         :pretty-print? (get-in this [:dev :pretty-print?] true)))
-                                                  do-compile-run)]
-      
-      (go-loop [cljs-state initial-state]
+  (start [{:keys [source-path] :as cljs-opts}]
+    (let [component-latch-ch (a/chan)
+          {file-change-ch :out-ch, file-watch-latch-ch :latch-ch} (watch/watch-files! (io/file source-path))
+
+          {:keys [target-path], :as cljs-opts} (-> cljs-opts
+                                                   (merge (:dev cljs-opts))
+                                                   (normalise-output-locations :dev))
+          cljs-compiler-env (cljs-env/default-compiler-env cljs-opts)]
+
+      (build-cljs! cljs-opts cljs-compiler-env)
+
+      (log/infof "Watching CLJS directory '%s'..." source-path)
+
+      (go-loop []
         (a/alt!
-          (a/thread (cljs/wait-for-modified-files! cljs-state))
-          ([modified-files] (recur (-> (cljs/reload-modified-files! cljs-state modified-files)
-                                       do-compile-run)))
+          file-change-ch (do
+                           (build-cljs! cljs-opts cljs-compiler-env)
+                           (recur))
 
-          stop-ch nil))
+          component-latch-ch (a/close! file-watch-latch-ch)))
 
-      (assoc this
-        ::stop-ch stop-ch
-        :configured-modules modules)))
-  
-  (stop [{stop-ch ::stop-ch}]
-    (a/close! stop-ch))
+      (assoc cljs-opts
+        ::component-latch-ch component-latch-ch)))
 
-  pb/BuiltComponent
-  (build [{:keys [output-dir], :or {output-dir (io/file "target/cljs")}, :as this} project]
-    (log/info "Building CLJS...")
-    
-    (let [build-output-dir (io/file output-dir "build")
-          jar-dir (io/file output-dir "jar")]
-      (-> @!initial-state
-          (init-compiler-state (assoc this
-                                 :optimizations (get-in this [:build :optimizations] :advanced)
-                                 :pretty-print? (get-in this [:build :pretty-print?] false)
-                                 :output-dir build-output-dir
-                                 :public-dir (io/file jar-dir (get-in this [:build :classpath-prefix]))))
-          (doto (#(intern 'user 'state %)))
-          do-compile-run)
+  (stop [{:keys [source-path ::component-latch-ch]}]
+    (a/close! component-latch-ch)
+    (log/infof "Stopped watching CLJS directory '%s'." source-path))
 
-      (log/info "Built CLJS.")
-      
-      [this (update project :filespecs conj {:type :path
-                                             :path (.getPath jar-dir)})]))
-  
-  CLJSComponent
-  (bidi-routes [{:keys [web-context-path output-dir]}]
-    [web-context-path (br/files {:dir (.getPath (io/file output-dir "public"))})])
+  pbp/BuiltComponent
+  (build [{:keys [source-path] :as cljs-opts} project]
+    (let [{:keys [output-dir] :as cljs-opts} (-> cljs-opts
+                                                 (merge (:build cljs-opts))
+                                                 (normalise-output-locations :build))
+          cljs-compiler-env (cljs-env/default-compiler-env cljs-opts)]
+
+      (build-cljs! cljs-opts cljs-compiler-env)
+
+      [cljs-opts (update project :filespecs conj {:type :path
+                                                  :path (.getPath (io/file output-dir "mains"))})]))
+
+  ICLJSCompiler
+  (bidi-routes [{:keys [web-context-path target-path] :as cljs-opts}]
+    [web-context-path (br/files {:dir (.getPath (io/file target-path (name :dev)))})])
 
   (cljs-handler [this]
     (br/make-handler (bidi-routes this)))
 
-  (path-for-module [{:keys [web-context-path configured-modules]} module]
-    (format "%s/%s" web-context-path (get-in configured-modules [module :js-name]))))
+  (path-for-js [{:keys [web-context-path]}]
+    (format "%s/mains/main.js" web-context-path))
+
+  (path-for-module [{:keys [web-context-path]} module]
+    (format "%s/mains/modules/%s.js" web-context-path (name module))))
+
+(comment
+  (pbp/build (map->CLJSCompiler (:cljs-compiler @phoenix/!system)) {}))
 
 (defrecord PreBuiltCLJSComponent []
   c/Lifecycle
@@ -154,15 +111,18 @@
   (stop [this]
     this)
 
-  CLJSComponent
+  ICLJSCompiler
   (bidi-routes [{:keys [web-context-path] :as this}]
     [web-context-path (br/resources {:prefix (get-in this [:build :classpath-prefix])})])
 
   (cljs-handler [this]
     (br/make-handler (bidi-routes this)))
 
-  (path-for-module [{:keys [web-context-path modules]} module]
-    (format "%s/%s.js" web-context-path (name module))))
+  (path-for-js [{:keys [web-context-path]}]
+    (format "%s/main.js" web-context-path))
+
+  (path-for-module [{:keys [web-context-path]} module]
+    (format "%s/modules/%s.js" web-context-path (name module))))
 
 (defn make-cljs-compiler [{built? :phoenix/built?, :as opts}]
   (if built?

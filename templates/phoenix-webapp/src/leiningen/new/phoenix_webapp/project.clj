@@ -14,9 +14,9 @@
                  [ring-middleware-format "0.4.0"]
 
                  [jarohen/phoenix.modules.aleph "0.0.1"]
-                 [jarohen/phoenix.modules.cljs "0.0.1"]
+                 [jarohen/phoenix.modules.cljs "0.0.2"]
 
-                 [org.clojure/clojurescript "0.0-2760"]
+                 [org.clojure/clojurescript "0.0-3126"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [jarohen/flow "0.3.0-alpha3"]
 
@@ -27,7 +27,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[jarohen/phoenix "0.0.7"]
+  :plugins [[jarohen/phoenix "0.0.9"]
             [jarohen/simple-brepl "0.2.1"]]
 
   :phoenix/config "{{name}}-config.edn"

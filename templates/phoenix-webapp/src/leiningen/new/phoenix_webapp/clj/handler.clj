@@ -22,16 +22,16 @@
          (html5
           [:head
            [:title "{{name}} - CLJS Single Page Web Application"]
-     
+
            (include-js "//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js")
            (include-js "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
            (include-css "//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
 
            [:script (brepl-js)]
 
-           (include-js (cljs/path-for-module cljs-compiler :main))
+           (include-js (cljs/path-for-js cljs-compiler))
            (include-css (bidi/path-for site-routes :site-css :request-method :get))]
-    
+
           [:body]))
 
         (content-type "text/html"))))
@@ -57,13 +57,13 @@
   (request-handler [{:keys [cljs-compiler]}]
     (make-handler ["" [site-routes
                        api-routes
-                       
+
                        (cljs/bidi-routes cljs-compiler)]]
-                  
+
                   (some-fn (site-handlers cljs-compiler)
                            (api-handlers)
 
                            #(when (fn? %) %)
-                           
+
                            (constantly {:status 404
                                         :body "Not found."})))))
