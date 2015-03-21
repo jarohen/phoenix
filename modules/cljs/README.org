@@ -30,6 +30,8 @@ web-handler component (written by you):
 
                    :web-context-path "/js"
 
+                   :main myapp.ui.app
+
                    :externs [...]
 
                    :dev {:optimizations :none
