@@ -40,11 +40,14 @@
 (defn build-cljs! [{:keys [source-path target-path] :as cljs-opts} cljs-compiler-env]
   (let [start-time (System/nanoTime)]
     (log/infof "Compiling CLJS, from '%s' to '%s'..." source-path target-path)
-    (cljs/build source-path (into {} cljs-opts) cljs-compiler-env)
-    (log/infof "Compiled CLJS, from '%s' to '%s', in %.2fs."
-               source-path
-               target-path
-               (/ (- (System/nanoTime) start-time) 1e9))))
+    (try
+      (cljs/build source-path (into {} cljs-opts) cljs-compiler-env)
+      (log/infof "Compiled CLJS, from '%s' to '%s', in %.2fs."
+                 source-path
+                 target-path
+                 (/ (- (System/nanoTime) start-time) 1e9))
+      (catch Exception e
+        (log/errorf e "Error compiling CLJS...")))))
 
 (defrecord CLJSCompiler []
   c/Lifecycle

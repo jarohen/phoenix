@@ -1,5 +1,8 @@
 * CLJS Component - Changelog
 ** 0.0.x
+*** 0.0.3
+
+Better error handling around the compilation - no breaking changes
 
 *** 0.0.2
 
