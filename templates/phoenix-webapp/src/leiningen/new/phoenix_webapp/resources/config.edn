@@ -2,17 +2,15 @@
 
  :cljs-compiler {:phoenix/component phoenix.modules.cljs/make-cljs-compiler
                  :source-path "ui-src"
-
-                 :modules [{:name :main
-                            :mains #{ {{name}}.ui.app}
-                            :dependencies nil}]
+                 :target-path "target/cljs/"
 
                  :web-context-path "/js"
-                 :output-dir "target/cljs/"
+
+                 :main {{name}}.ui.app
 
                  :dev {:optimizations :none
                        :pretty-print? true}
-                 
+
                  :build {:optimizations :advanced
                          :pretty-print? false
                          :classpath-prefix "js"}}
