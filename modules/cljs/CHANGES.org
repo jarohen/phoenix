@@ -1,5 +1,10 @@
 * CLJS Component - Changelog
 ** 0.0.x
+*** 0.0.4
+
+Bugfix - accidentally including =:modules {}= in the map, causing CLJS
+compiler issues
+
 *** 0.0.3
 
 Better error handling around the compilation - no breaking changes

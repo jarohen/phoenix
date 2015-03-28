@@ -1,4 +1,4 @@
-(defproject jarohen/phoenix.modules.cljs "0.0.3"
+(defproject jarohen/phoenix.modules.cljs "0.0.4"
   :description "A module to compile and serve CLJS files"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

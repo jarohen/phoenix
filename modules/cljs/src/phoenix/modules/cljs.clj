@@ -31,11 +31,12 @@
                :asset-path web-context-path)
 
         (update :modules (fn [modules]
-                           (->> (for [[module-key module-opts] modules]
-                                  [module-key (assoc module-opts
-                                                :output-to (.getPath (io/file module-dir
-                                                                              (str (name module-key) ".js"))))])
-                                (into {})))))))
+                           (when modules
+                             (->> (for [[module-key module-opts] modules]
+                                    [module-key (assoc module-opts
+                                                  :output-to (.getPath (io/file module-dir
+                                                                                (str (name module-key) ".js"))))])
+                                  (into {}))))))))
 
 (defn build-cljs! [{:keys [source-path target-path] :as cljs-opts} cljs-compiler-env]
   (let [start-time (System/nanoTime)]
@@ -105,7 +106,7 @@
     (format "%s/mains/modules/%s.js" web-context-path (name module))))
 
 (comment
-  (pbp/build (map->CLJSCompiler (:cljs-compiler @phoenix/!system)) {}))
+  (pbp/build (map->CLJSCompiler (:cljs-compiler @phoenix/system)) {}))
 
 (defrecord PreBuiltCLJSComponent []
   c/Lifecycle
