@@ -451,6 +451,22 @@ specified, include it with the vector: =[:phoenix/env-var :my-env-var "default"]
   MYAPP_USER=another-user MYAPP_PASSWORD=pr0dp455w0rd lein phoenix
 #+END_SRC
 
+*** Config in JVM properties
+
+Configuration can refer to JVM properties in the same way as
+environment variables, using either
+=[:phoenix/jvm-prop :property.name]= or
+=[:phoenix/edn-jvm-prop :property.name]=, both of which take defaults
+as an optional third element in the vector.
+
+You can then either supply the JVM properties in your Lein
+configuration, under the =:jvm-opts= key (which can itself be within a
+Lein profile), or by supplying it as an option to =java=, e.g.:
+
+#+BEGIN_SRC sh
+  java -Dproperty.name=my-value -jar thingy.jar command-line-args...
+#+END_SRC
+
 ** Building Phoenix-based projects
 
 You can build Phoenix-based projects by running:
