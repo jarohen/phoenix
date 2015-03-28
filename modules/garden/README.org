@@ -1,0 +1,156 @@
+* Garden - Phoenix Module
+
+This is a module to format and serve CSS files within a Phoenix
+system.
+
+You don't have to use Phoenix to use this module (although I recommend
+you check it out - it's great! #biased). If you don't, simply call
+=(phoenix.modules.garden/make-css-compiler <config-map>)= in your
+Component System setup, and the effect is the same.
+
+** Getting started
+
+Add this in your 'project.clj', as a dependency:
+
+#+BEGIN_SRC clojure
+  [jarohen/phoenix.modules.garden "0.0.1"]
+#+END_SRC
+
+In your Phoenix config, add a Garden CSS component (this component),
+a web-handler component (written by you), and a CSS :
+
+#+BEGIN_SRC clojure
+  {:web-handler {:phoenix/component myapp.handler/map->WebHandler
+                 :css-compiler :phoenix/dep}
+
+   :site-css {:phoenix/component myapp.css/map->MainSiteSnippet}
+   :home-css {:phoenix/component myapp.css/map->HomePageSnippet}
+
+   :css-compiler {:phoenix/component phoenix.modules.garden/make-compiler
+                  :target-path "target/css/" ; where to put the CSS files when we compile them
+                  :classpath-prefix "css" ; where to put the CSS in a JAR, when we build
+                  :web-context-path "/css" ; context path to serve the CSS under
+
+                  ;; Keys in this :modules map can be used to refer to
+                  ;; compiled CSS files (later)
+
+                  ;; Value vectors specify the different CSS snippet
+                  ;; components included in each compiled file.
+
+                  :modules {:main [:site-css]
+                            :home [:site-css :home-css]}
+
+
+                  ;; Don't forget to give the compiler the dependencies
+                  ;; to your CSS snippets!
+
+                  :site-css :phoenix/dep ; satisfies phoenix.modules.garden/GardenSnippet
+                  :home-css :phoenix/dep}} ; satisfies phoenix.modules.garden/GardenSnippet
+#+END_SRC
+
+'Modules' allow you to split out your CSS code into multiple entry
+points, so that you don't have to serve up all of your CSS to each
+page, if you don't need to.
+
+*** Writing CSS Snippets:
+
+CSS Snippets are simple components - they just need to satisfy the
+=phoenix.modules.garden/GardenSnippet= protocol, which has one
+function - =css-snippet=. From this function, you can return a seq of
+anything that you'd normally pass to =garden.core/css= - see the
+[[https://github.com/noprompt/garden][Garden README]] for more information about what you can do here.
+
+#+BEGIN_SRC clojure
+  (ns myapp.css
+    (:require [phoenix.modules.garden :as css]
+              [garden.color :as color]
+              [garden.units :refer [em]]))
+
+  (defrecord MainSiteSnippet []
+    css/GardenSnippet
+    (css-snippet [_]
+      [[:body {:font-size "16pt"}]
+       [:a {:pointer "cursor"}]]))
+
+  (defrecord HomePageSnippet []
+    css/GardenSnippet
+    (css-snippet [_]
+      [[:div#content {:color (color/rgb 255 0 255)}
+        [:h2 {:font-size (em 1.4)}]]]))
+#+END_SRC
+
+*** Using the CSS compiler in a web handler
+
+The CSS compiler also provides a number of functions, that you can
+use in your own handler:
+
+#+BEGIN_SRC clojure
+  (ns myapp.handler
+    (:require [phoenix.modules.garden :as css]))
+
+  ;; Returns a handler that will serve CSS files as required:
+  (css/css-handler css-compiler)
+
+  ;; Returns a set of bidi routes that can be included in a route data
+  ;; structure:
+  (css/bidi-routes css-compiler)
+
+  ;; Returns the relative URL of the compiled CSS file for the given
+  ;; module, for use in <link href="..." /> tags:
+  (css/path-for-module css-compiler :main)
+#+END_SRC
+
+Your handler might, therefore, look something like this:
+
+#+BEGIN_SRC clojure
+  (ns myapp.handler
+    (:require [bidi.ring :refer [make-handler]]
+              [compojure.core :refer [routes GET]]
+              [com.stuartsierra.component :as c]
+              [hiccup.core :refer [include-css]]
+              [hiccup.page :refer [html5]]
+              [modular.ring :refer [WebRequestHandler]]
+              [phoenix.modules.css :as css]))
+
+  (defn handle-page [req css-compiler]
+    (html5
+     [:head
+      [:title ...]
+
+      (include-css (css/path-for-css css-compiler))
+      ...]
+
+     [:body
+      ...]))
+
+  (defrecord AppHandler []
+    c/Lifecycle
+    (start [this] this)
+    (stop [this] this)
+
+    WebRequestHandler
+    (request-handler [{:keys [css-compiler] :as this}]
+
+      ;; e.g. Compojure
+      (routes
+        (GET "/" {:as req}
+          (handle-page req css-compiler))
+
+        (css/css-handler css-compiler))
+
+      ;; e.g. Bidi
+      (make-handler ["" [{"/" {:get :page-handler}}
+                         (css/bidi-routes css-compiler)]]
+
+                    (some-fn {:page-handler (fn [req]
+                                              (handle-page req css-compiler))}
+
+                             #(when (fn? %) %)))))
+#+END_SRC
+
+** Licence
+
+Copyright © 2015 James Henderson
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
