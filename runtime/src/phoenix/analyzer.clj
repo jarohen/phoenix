@@ -8,7 +8,9 @@
 (defmulti analyze-config-pair
   (fn [config acc k v]
     (or (#{:phoenix/component} k)
-        (#{:phoenix/dep} v))))
+        (#{:phoenix/dep} v)
+        (and (vector? v)
+             (#{:phoenix/dep} (first v))))))
 
 (defmethod analyze-config-pair :phoenix/dep [_ acc k v]
   (let [referred-component (or (when (= v :phoenix/dep)
