@@ -75,7 +75,7 @@ No worries, I understand :)
 First, include Phoenix as a plugin in your 'project.clj':
 
 #+BEGIN_SRC clojure
-  {:plugins [jarohen/phoenix "0.0.9"]}
+  {:plugins [jarohen/phoenix "0.1.0"]}
 #+END_SRC
 
 Next, make a small config file on your classpath - let's say, in the
@@ -101,7 +101,7 @@ as and when you declare one in your config file.
 You'll need to add the Phoenix runtime to your dependencies:
 
 #+BEGIN_SRC clojure
-  [jarohen/phoenix.runtime "0.0.9"]
+  [jarohen/phoenix.runtime "0.1.0"]
 #+END_SRC
 
 Then, from a REPL, run

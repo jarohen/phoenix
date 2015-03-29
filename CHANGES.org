@@ -1,5 +1,16 @@
 * Changelog
+** 0.1.x
+*** 0.1.0
+
+No breaking changes. Ensuring that =[:phoenix/secret ...]= can be
+resolved at any level of the map
+
 ** 0.0.x
+*** 0.0.9
+
+No breaking changes - separating out the build protocols
+s.t. components don't have to depend on most of Phoenix.
+
 *** 0.0.8
 
 Breaking changes: =phoenix/!system= renamed back to =phoenix/system=,
