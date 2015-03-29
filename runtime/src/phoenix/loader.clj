@@ -1,8 +1,9 @@
 (ns phoenix.loader
   (:require [phoenix.location :as l]
             [phoenix.merge :refer [deep-merge]]
-            [clojure.tools.reader.edn :as edn]
-            [clojure.tools.logging :as log]))
+            [phoenix.references :as pr]
+            [clojure.tools.logging :as log]
+            [clojure.tools.reader.edn :as edn]))
 
 (defn try-slurp [slurpable]
   (try
@@ -50,4 +51,5 @@
       deep-merge
       ((juxt :general :host :user :environment))
       deep-merge
-      (dissoc :phoenix/includes)))
+      (dissoc :phoenix/includes)
+      pr/resolve-references))

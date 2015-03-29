@@ -14,7 +14,7 @@ Component System setup, and the effect is the same.
 Add this in your 'project.clj', as a dependency:
 
 #+BEGIN_SRC clojure
-  [jarohen/phoenix.modules.cljs "0.0.2"]
+  [jarohen/phoenix.modules.cljs "0.0.4"]
 #+END_SRC
 
 In your Phoenix config, add an CLJS compiler component and a
@@ -92,6 +92,7 @@ Your handler might, therefore, look something like this:
     (:require [bidi.ring :refer [make-handler]]
               [compojure.core :refer [routes GET]]
               [com.stuartsierra.component :as c]
+              [hiccup.core :refer [include-js]]
               [hiccup.page :refer [html5]]
               [modular.ring :refer [WebRequestHandler]]
               [phoenix.modules.cljs :as cljs]))
@@ -101,7 +102,7 @@ Your handler might, therefore, look something like this:
      [:head
       [:title ...]
 
-      [:script {:src (cljs/path-for-js cljs-compiler)}]
+      (include-js (cljs/path-for-js cljs-compiler))
       ...]
 
      [:body

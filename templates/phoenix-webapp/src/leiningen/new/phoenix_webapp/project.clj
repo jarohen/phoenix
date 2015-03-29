@@ -16,7 +16,7 @@
                  [jarohen/phoenix.modules.aleph "0.0.1"]
 
                  [org.clojure/clojurescript "0.0-3126"]
-                 [jarohen/phoenix.modules.cljs "0.0.3"]
+                 [jarohen/phoenix.modules.cljs "0.0.4"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
 
                  {{#flow?}}[jarohen/flow "0.3.0-alpha3"]{{/flow?}}{{#om?}}[org.omcljs/om "0.8.8"]{{#sablono?}}
@@ -29,7 +29,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[jarohen/phoenix "0.0.9"]
+  :plugins [[jarohen/phoenix "0.1.0"]
             [jarohen/simple-brepl "0.2.1"]]
 
   :phoenix/config "{{name}}-config.edn"
