@@ -2,9 +2,7 @@
       :clojure.tools.namespace.repl/unload false}
   phoenix.main
   (:gen-class)
-  (:require [clojure.java.io :as io]
-            [phoenix]
-            [phoenix.jar]))
+  (:require [clojure.java.io :as io]))
 
 (defn phoenix-config-location []
   (slurp (io/resource "META-INF/phoenix-config-resource")))
@@ -13,13 +11,20 @@
   (read-string (slurp (io/resource "META-INF/phoenix-repl-options.edn"))))
 
 (defn -main []
-  (let [project {:phoenix/config (phoenix-config-location)
-                 :repl-options (repl-options)}]
+  ;; This is split out because we don't want Phoenix and its
+  ;; transitive dependencies AOT-compiled with this namespace. See #8
 
-    (alter-var-root #'phoenix.jar/built? (constantly true))
+  (require '[phoenix]
+           '[phoenix.jar])
 
-    (phoenix/init-phoenix! (io/resource (phoenix-config-location)))
+  (eval
+   `(let [project# {:phoenix/config (phoenix-config-location)
+                    :repl-options (repl-options)}]
 
-    (phoenix/init-nrepl! project)
+      (alter-var-root #'phoenix.jar/built? (constantly true))
 
-    (#'phoenix/do-start!)))
+      (phoenix/init-phoenix! (io/resource (phoenix-config-location)))
+
+      (phoenix/init-nrepl! project#)
+
+      (#'phoenix/do-start!))))
