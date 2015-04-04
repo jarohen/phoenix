@@ -1,5 +1,12 @@
 * Changelog
 ** 0.1.x
+*** 0.1.1
+
+(#8) Fix for AOT'ing too much when building Phoenix - meant some strange
+Schema issues. Thanks to @whodidthis for flagging!
+
+No breaking changes
+
 *** 0.1.0
 
 No breaking changes. Ensuring that =[:phoenix/secret ...]= can be
