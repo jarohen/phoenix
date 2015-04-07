@@ -1,5 +1,6 @@
 (ns phoenix.all-in-test
   (:require [phoenix.core :as pc]
+            [phoenix]
             [clojure.java.io :as io]
             [clojure.test :refer :all]
             [com.stuartsierra.component :as c]))
@@ -34,7 +35,10 @@
 
 (defn run-system []
   (let [config-resource (io/resource "phoenix/test-config.edn")
-        started-system (c/start-system (pc/make-system {:config (pc/read-config {:config-resource config-resource})}))]
+        started-system (-> (pc/load-config {:config-source config-resource})
+                           pc/analyze-config
+                           pc/make-system
+                           c/start-system)]
     (println "System started!")
     (c/stop-system started-system)
     (println "System stopped!")))
