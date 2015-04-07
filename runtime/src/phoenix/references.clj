@@ -16,7 +16,7 @@
       (handle-error))))
 
 (defmethod resolve-reference :phoenix/env-var [[_ var-name default] config]
-  (or (System/getenv (csk/->SNAKE_CASE_STRING var-name)) default))
+  (or (System/getenv (csk/->SCREAMING_SNAKE_CASE_STRING var-name)) default))
 
 (defmethod resolve-reference :phoenix/edn-env-var [[_ var-name default] config]
   (let [env-value (resolve-reference [:phoenix/env-var var-name default] config)]
