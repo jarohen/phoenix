@@ -16,7 +16,7 @@
 
                  [jarohen/phoenix.build "0.0.1"]
 
-                 [camel-snake-kebab "0.2.4"]
+                 [camel-snake-kebab "0.3.1" :exclusions [org.clojure/clojure]]
 
                  [com.stuartsierra/component "0.2.2"]
                  [com.stuartsierra/dependency "0.1.1"]
