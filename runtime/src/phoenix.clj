@@ -42,7 +42,8 @@
   (assert (nil? @system) "System already started!")
 
   (binding [clojure.test/*load-tests* false]
-    (tn/refresh :after 'phoenix/do-start!)))
+    (log/with-logs ['clojure.tools.namespace.repl :info :warn]
+      (tn/refresh :after 'phoenix/do-start!))))
 
 (defn stop! []
   (boolean (when-let [old-system (m/deref-reset! system nil)]
