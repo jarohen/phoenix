@@ -42,15 +42,18 @@ to get a connection suitable for clojure.java.jdbc's query/etc
 functions:
 
 #+BEGIN_SRC clojure
-  (require '[clojure.java.jdbc :as jdbc]
-           '[phoenix.modules.jdbc-pool :as db])
+(ns myapp.my-component
+  (:require [clojure.java.jdbc :as jdbc]
+            [phoenix.modules.jdbc-pool :as db]
+            [com.stuartsierra.component :as c]))
+(defrecord MyComponent []
+  c/Lifecycle
+  (start [{:keys [db-pool] :as this} ]
+    (jdbc/query (db/db-conn db-pool)
+                ["SELECT COUNT(*) FROM my_table"]
+                ...))
+    this)
 
-  (defrecord MyComponent []
-    (start [{:keys [db-pool]}]
-      (jdbc/query (db/db-conn db-pool)
-                  ["SELECT COUNT(*) FROM my_table"]
-                  ...)
-      ...)
-
-    (stop [_] ...))
+  (stop [this]
+    this))
 #+END_SRC
