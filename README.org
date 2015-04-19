@@ -1,5 +1,8 @@
 * Phoenix
 
+  #+ATTR_HTML: title="Join the chat at https://gitter.im/james-henderson/phoenix"
+  [[https://gitter.im/james-henderson/phoenix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/Join%20Chat.svg]]
+
 Phoenix is a library that helps with simple configuration and
 credential management for Component-based systems, based on (and
 hopefully superceding) [[https://github.com/james-henderson/nomad][Nomad]] and [[https://github.com/james-henderson/frodo][Frodo]].
