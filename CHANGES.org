@@ -1,5 +1,10 @@
 * Changelog
 ** 0.1.x
+*** 0.1.2
+
+Bumping version of CSK to 0.3.1. Couple of other minor version
+bumps. Thanks to [[https://github.com/tangrammer][Juan Antonio Ruz]] for the PR!
+
 *** 0.1.1
 
 (#8) Fix for AOT'ing too much when building Phoenix - meant some strange
