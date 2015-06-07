@@ -29,4 +29,6 @@
 
   :resource-paths ["resources" "../common"]
 
+  :exclusions [org.clojure/clojure]
+
   :aot [phoenix.main])
