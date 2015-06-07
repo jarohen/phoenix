@@ -1,7 +1,8 @@
 (ns ^{:clojure.tools.namespace.repl/load false
       :clojure.tools.namespace.repl/unload false}
   phoenix
-  (:require [phoenix.core :as pc]
+  (:require [nomad :refer [read-config]]
+            [phoenix.core :as pc]
             [phoenix.location :as l]
             [phoenix.nrepl :refer [start-nrepl!]]
             [clojure.tools.logging :as log]
@@ -32,11 +33,11 @@
     merged-location))
 
 (defn- do-start! []
-  (reset! system (-> (pc/load-config {:config-source @!default-config-source
-                                       :location (:current @!location)})
-                      pc/analyze-config
-                      pc/make-system
-                      c/start-system)))
+  (reset! system (-> (read-config @!default-config-source
+                                  {:location (:current @!location)})
+                     pc/analyze-config
+                     pc/make-system
+                     c/start-system)))
 
 (defn start! []
   (assert (nil? @system) "System already started!")
@@ -63,6 +64,6 @@
   (reset! !default-config-source config-source))
 
 (defn init-nrepl! [{:keys [repl-options target-port root] :as project}]
-  (when-let [nrepl-port (-> (pc/load-config {:config-source @!default-config-source})
+  (when-let [nrepl-port (-> (read-config @!default-config-source)
                             :phoenix/nrepl-port)]
     (start-nrepl! nrepl-port project)))
