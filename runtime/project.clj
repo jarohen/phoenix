@@ -18,7 +18,7 @@
 
                  [camel-snake-kebab "0.3.1" :exclusions [org.clojure/clojure]]
 
-                 [jarohen/nomad "0.8.0-beta1"]
+                 [jarohen/nomad "0.8.0-beta3"]
                  [com.stuartsierra/component "0.2.3"]
                  [com.stuartsierra/dependency "0.1.1"]
                  [medley "0.5.5"]
