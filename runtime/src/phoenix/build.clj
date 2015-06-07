@@ -2,10 +2,7 @@
   (:require [phoenix.build.protocols :as pbp]
             [phoenix.core :as pc]
             [phoenix.deps :as pd]
-            [phoenix.location :as l]
-            [phoenix.system :as s]
             [clojure.java.io :as io]
-            [com.stuartsierra.component :as c]
             [com.stuartsierra.dependency :as deps]
             [medley.core :as m]))
 

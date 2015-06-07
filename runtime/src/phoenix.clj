@@ -3,7 +3,6 @@
   phoenix
   (:require [nomad :refer [read-config]]
             [phoenix.core :as pc]
-            [phoenix.location :as l]
             [phoenix.nrepl :refer [start-nrepl!]]
             [clojure.tools.logging :as log]
             [clojure.tools.namespace.repl :as tn]
@@ -17,24 +16,8 @@
 
 (def system (atom nil))
 
-(defonce ^:private !location
-  (atom (let [location (l/get-location)]
-          {:original location
-           :current location})))
-
-(defn set-location! [{:keys [environment host user] :as new-location}]
-  (assert (nil? @system) "Can't change location when system is running...")
-
-  (let [merged-location (swap! !location
-                               (fn [{:keys [original] :as old-location}]
-                                 (assoc old-location
-                                   :current (merge original new-location))))]
-    (log/info "Setting Phoenix location:" (:current merged-location))
-    merged-location))
-
 (defn- do-start! []
-  (reset! system (-> (read-config @!default-config-source
-                                  {:location (:current @!location)})
+  (reset! system (-> (read-config @!default-config-source)
                      pc/analyze-config
                      pc/make-system
                      c/start-system)))
@@ -50,12 +33,8 @@
   (boolean (when-let [old-system (m/deref-reset! system nil)]
              (c/stop-system old-system))))
 
-(defn reload! [& [{:keys [environment host user] :as new-location}]]
+(defn reload! []
   (stop!)
-
-  (when new-location
-    (set-location! new-location))
-
   (start!))
 
 (defn init-phoenix! [config-source]

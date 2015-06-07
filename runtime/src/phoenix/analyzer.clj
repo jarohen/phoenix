@@ -1,6 +1,5 @@
 (ns phoenix.analyzer
   (:require [phoenix.jar :as jar]
-            [phoenix.secret :as ps]
             [camel-snake-kebab.core :as csk]
             [clojure.tools.reader.edn :as edn]
             [medley.core :as m]))
