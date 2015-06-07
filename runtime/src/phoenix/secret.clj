@@ -1,9 +1,8 @@
 (ns phoenix.secret
-  (:require [buddy.core.crypto :as b]
-            [buddy.core.codecs :as bc]
-            [buddy.core.keys :as bk]
-            [clojure.tools.reader.edn :as edn]
-            [clojure.string :as s]))
+  (:require [buddy.core.codecs :as bc]
+            [buddy.core.crypto :as b]
+            [buddy.core.nonce :as bn]
+            [clojure.tools.reader.edn :as edn]))
 
 (defn- calculate-padding-length [{:keys [byte-count block-size]}]
   (mod (- block-size
@@ -18,7 +17,7 @@
         out-array (byte-array (+ byte-count padding-length 1))]
     (aset out-array 0 (byte padding-length))
     (System/arraycopy bytes 0 out-array 1 byte-count)
-    (System/arraycopy (bk/make-random-bytes padding-length) 0 out-array (inc byte-count) padding-length)
+    (System/arraycopy (bn/random-bytes padding-length) 0 out-array (inc byte-count) padding-length)
 
     out-array))
 
@@ -29,49 +28,49 @@
     (System/arraycopy bytes 1 out-array 0 byte-count)
     out-array))
 
-(defn- make-engine []
-  (b/engine :aes :ofb))
+(defn- make-cypher []
+  (b/block-cipher :aes :ofb))
 
 (defn- make-iv [block-size]
-  (bk/make-random-bytes block-size))
+  (bn/random-bytes block-size))
 
 (defn generate-key
   ([] (generate-key 256))
 
   ([key-size-bits]
-   (bc/bytes->hex (bk/make-random-bytes (/ key-size-bits 8)))))
+   (bc/bytes->hex (bn/random-bytes (/ key-size-bits 8)))))
 
 (defn decrypt [cypher-text secret-key]
-  (let [engine (make-engine)
-        block-size (.getBlockSize engine)
+  (let [cypher (make-cypher)
+        block-size (.getBlockSize cypher)
         [iv cypher-bytes] (map byte-array (split-at block-size (bc/hex->bytes cypher-text)))
         plain-bytes (byte-array (count cypher-bytes))]
 
-    (b/initialize! engine
+    (b/initialize! cypher
                    {:key (bc/hex->bytes secret-key)
                     :iv iv
                     :op :decrypt})
 
     (doseq [block-idx (range 0 (count cypher-bytes) block-size)]
-      (.processBlock engine cypher-bytes block-idx plain-bytes block-idx))
+      (.processBlock cypher cypher-bytes block-idx plain-bytes block-idx))
 
     (edn/read-string (String. (unpad plain-bytes block-size) "utf-8"))))
 
 (defn encrypt [plain-obj secret-key]
-  (let [engine (make-engine)
-        block-size (.getBlockSize engine)
+  (let [cypher (make-cypher)
+        block-size (.getBlockSize cypher)
         iv (make-iv block-size)
-        
-        obj-bytes (pad (.getBytes (pr-str plain-obj) "utf-8") (.getBlockSize engine))
+
+        obj-bytes (pad (.getBytes (pr-str plain-obj) "utf-8") (.getBlockSize cypher))
         cypher-bytes (byte-array (count obj-bytes))]
 
-    (b/initialize! engine
+    (b/initialize! cypher
                    {:key (bc/hex->bytes secret-key)
                     :iv iv
                     :op :encrypt})
 
     (doseq [block-idx (range 0 (count obj-bytes) block-size)]
-      (.processBlock engine obj-bytes block-idx cypher-bytes block-idx))
+      (.processBlock cypher obj-bytes block-idx cypher-bytes block-idx))
 
     (str (bc/bytes->hex iv)
          (bc/bytes->hex cypher-bytes))))
