@@ -650,7 +650,7 @@ up and tear down a system, for testing purposes:
 #+BEGIN_SRC clojure
   (require '[phoenix.core :as pc])
 
-  (pc/with-running-system [{:keys [component-under-test]} (-> (pc/load-config {:config-resource (io/resource "app-config.edn")})
+  (pc/with-running-system [{:keys [component-under-test]} (-> (pc/load-config {:config-source (io/resource "app-config.edn")})
                                                               pc/analyze-config
                                                               (pc/make-system {:targets [:component-under-test]}))]
 
