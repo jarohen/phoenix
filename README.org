@@ -93,7 +93,7 @@ Then, tell Phoenix where to find your main config file by putting a
 =:phoenix/config= key in your 'project.clj':
 
 #+BEGIN_SRC clojure
-  {:phoenix/config "config/myapp-config.edn"}
+  :phoenix/config "myapp-config.edn"
 #+END_SRC
 
 Now, if you run =lein phoenix=, you should see the nREPL server
