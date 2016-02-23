@@ -1,9 +1,9 @@
 (ns phoenix.location
   (:require [phoenix.merge :refer [deep-merge]]
             [medley.core :as m]
-            [clojure.java.shell :refer [sh]]
             [clojure.string :as s]
-            [schema.core :as sc]))
+            [schema.core :as sc])
+  (:import java.net.InetAddress))
 
 (def Location
   {(sc/optional-key :environment) (sc/maybe sc/Str)
@@ -14,10 +14,7 @@
   {:environment (or (get (System/getenv) "PHOENIX_ENV")
                     (System/getProperty "phoenix.env"))
 
-   ;; not sure how I plan to make this work on Windoze... Will see if
-   ;; someone complains first, I suspect. If you do see this, I'm
-   ;; generally quite quick at merging PRs ;)
-   :host (s/trim (:out (sh "hostname")))
+   :host (s/trim (.getHostName (InetAddress/getLocalHost)))
 
    :user (System/getProperty "user.name")})
 
