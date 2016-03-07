@@ -1,5 +1,9 @@
 * Changelog
 ** 0.1.x
+*** 0.1.3
+
+Fixing hostname resolution on Windows - thanks to [[https://github.com/firthh][Hugo]] for the PR!
+
 *** 0.1.2
 
 Bumping version of CSK to 0.3.1. Couple of other minor version
