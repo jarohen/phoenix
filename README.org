@@ -78,7 +78,8 @@ No worries, I understand :)
 First, include Phoenix as a plugin in your 'project.clj':
 
 #+BEGIN_SRC clojure
-  {:plugins [jarohen/phoenix "0.1.2"]}
+  :plugins [[jarohen/phoenix "0.1.2"]
+             ...]
 #+END_SRC
 
 Next, make a small config file on your classpath - let's say, in the
