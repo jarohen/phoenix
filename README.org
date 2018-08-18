@@ -2,10 +2,19 @@
 
   #+ATTR_HTML: title="Join the chat at https://gitter.im/james-henderson/phoenix"
   [[https://gitter.im/james-henderson/phoenix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge][file:https://badges.gitter.im/Join%20Chat.svg]]
+  
+  #+BEGIN_QUOTE
+  Phoenix has not been maintained for years, and no longer represents 
+  my opinion on how best to wire up Clojure applications. We live and learn!
+  
+  I would recommend investigating [[https://github.com/james-henderson/nomad][Nomad]] 
+  and [[https://github.com/james-henderson/bounce][Bounce]]
+  #+END_QUOTE
 
 Phoenix is a library that helps with simple configuration and
-credential management for Component-based systems, based on (and
-hopefully superceding) [[https://github.com/james-henderson/nomad][Nomad]] and [[https://github.com/james-henderson/frodo][Frodo]].
+credential management for Component-based systems, based on 
+[[https://github.com/james-henderson/nomad][Nomad]] and 
+[[https://github.com/james-henderson/frodo][Frodo]].
 
 If you've written a traditional Component-based system, you've
 probably experienced having to create a plethora of 'system.clj',
