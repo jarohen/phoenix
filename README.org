@@ -7,8 +7,8 @@
   Phoenix has not been maintained for years, and no longer represents 
   my opinion on how best to wire up Clojure applications. We live and learn!
   
-  I would recommend investigating [[https://github.com/james-henderson/nomad][Nomad]] 
-  and [[https://github.com/james-henderson/bounce][Bounce]]
+  I would recommend investigating [[https://github.com/jarohen/nomad][Nomad]] 
+  and [[https://github.com/jarohen/bounce][Bounce]]
   #+END_QUOTE
 
 Phoenix is a library that helps with simple configuration and
